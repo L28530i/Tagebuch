@@ -106,6 +106,22 @@
   .bpri:active{background:rgba(200,169,110,.25);}
   .bpri:disabled{opacity:.4;cursor:not-allowed;}
 
+  /* CONTEXT PANEL */
+  #ctxPanel{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:150;padding:20px;overflow-y:auto;}
+  #ctxPanel.open{display:flex;align-items:flex-start;justify-content:center;}
+  .ctx-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px 18px;max-width:500px;width:100%;margin-top:20px;}
+  .ctx-box h2{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--accent);margin-bottom:6px;}
+  .ctx-box p{font-size:.8rem;color:var(--text2);line-height:1.6;margin-bottom:16px;}
+  .ctx-field{margin-bottom:14px;}
+  .ctx-field label{font-family:'IBM Plex Mono',monospace;font-size:.63rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text2);display:block;margin-bottom:6px;}
+  .ctx-field textarea,.ctx-field input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:.85rem;color:var(--text);font-family:'IBM Plex Sans',sans-serif;outline:none;resize:none;line-height:1.6;}
+  .ctx-field textarea:focus,.ctx-field input:focus{border-color:var(--accent);}
+  .ctx-field textarea::placeholder,.ctx-field input::placeholder{color:var(--text2);font-style:italic;}
+  #ctxSaveBtn{width:100%;padding:13px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(200,169,110,.1);color:var(--accent);font-family:'Playfair Display',serif;font-size:.95rem;cursor:pointer;outline:none;margin-top:4px;}
+  #ctxSaveBtn:active{background:rgba(200,169,110,.25);}
+  #ctxCloseBtn{width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text2);font-family:'IBM Plex Sans',sans-serif;font-size:.82rem;cursor:pointer;outline:none;margin-top:8px;}
+  #ctxIndicator{font-size:.62rem;font-family:'IBM Plex Mono',monospace;color:var(--green);cursor:pointer;text-decoration:underline;text-underline-offset:3px;margin-top:2px;}
+
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--accent);color:var(--accent);padding:10px 20px;border-radius:20px;font-size:.8rem;font-family:'IBM Plex Mono',monospace;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
   .toast.show{opacity:1;}
 </style>
@@ -143,6 +159,7 @@
   <div style="text-align:right">
     <div class="date" id="hDate"></div>
     <div id="keyIndicator" onclick="resetKey()">🔑 Key ändern</div>
+    <div id="ctxIndicator" onclick="openCtx()">⚙️ Kontext</div>
   </div>
 </header>
 
@@ -204,6 +221,32 @@
       <button class="bpri" id="txBtn" disabled>⬇ TXT</button>
       <button class="bpri" id="pdBtn" disabled>📄 PDF</button>
     </div>
+  </div>
+</div>
+
+<!-- CONTEXT PANEL -->
+<div id="ctxPanel">
+  <div class="ctx-box">
+    <h2>⚙️ Hintergrundkontext</h2>
+    <p>Hilft Whisper dich besser zu verstehen – Fachbegriffe, Namen, Branche. Wird bei jeder Aufnahme mitgeschickt.</p>
+    <div class="ctx-field">
+      <label>Branche / Tätigkeit</label>
+      <input type="text" id="ctxBranche" placeholder="z.B. Logistik, Produktion, Einzelhandel…">
+    </div>
+    <div class="ctx-field">
+      <label>Mitarbeiternamen</label>
+      <input type="text" id="ctxNamen" placeholder="z.B. Thomas, Maria, Klaus, Özlem…">
+    </div>
+    <div class="ctx-field">
+      <label>Fachbegriffe &amp; typische Wörter</label>
+      <textarea id="ctxBegriffe" rows="3" placeholder="z.B. Lieferschein, Kommissionierung, Schichtplan, Inventur…"></textarea>
+    </div>
+    <div class="ctx-field">
+      <label>Weitere Hinweise (optional)</label>
+      <textarea id="ctxExtra" rows="2" placeholder="z.B. Wir arbeiten im 3-Schicht-Betrieb, Filiale Wien…"></textarea>
+    </div>
+    <button id="ctxSaveBtn">Speichern</button>
+    <button id="ctxCloseBtn">Abbrechen</button>
   </div>
 </div>
 
@@ -271,6 +314,7 @@ function resetKey() {
 
 // ── MAIN APP ──────────────────────────────────────────────
 function initMainApp() {
+  loadCtx();
   document.getElementById('hDate').innerHTML =
     new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).replace(',','<br>');
   render();
@@ -389,7 +433,7 @@ async function stopRec() {
     formData.append('file', blob, `audio.${ext}`);
     formData.append('model', 'whisper-1');
     formData.append('language', 'de');
-    formData.append('prompt', 'Führungskraft, Mitarbeiter, Aufgaben, Arbeitsfortschritt, berufliche Notizen');
+    formData.append('prompt', getWhisperPrompt());
 
     const isGroq = openaiKey.startsWith('gsk_');
     const apiUrl = isGroq ? 'https://api.groq.com/openai/v1/audio/transcriptions' : 'https://api.openai.com/v1/audio/transcriptions';
@@ -536,6 +580,53 @@ document.getElementById('pdBtn').addEventListener('click',()=>{
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Tagesbericht</title><style>body{font-family:'Segoe UI',Arial,sans-serif;padding:36px;max-width:700px;margin:0 auto;color:#222}h1{font-size:20px;margin-bottom:4px}.meta{color:#888;font-size:12px;margin-bottom:22px;font-family:monospace}hr{border:none;border-top:1px solid #ddd;margin:18px 0}table{width:100%;border-collapse:collapse}@media print{body{padding:20px}}</style></head><body><h1>Führungsjournal – Tagesbericht</h1><div class="meta">${ds} · ${entries.length} Einträge</div><hr>${body}<hr><p style="font-family:monospace;font-size:11px;color:#999;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Rohe Notizen</p><table>${rows}</table><script>window.onload=()=>window.print()<\/script></body></html>`);
   w.document.close();showToast('PDF-Druck geöffnet');
+});
+
+// ── CONTEXT ───────────────────────────────────────────────
+function loadCtx() {
+  try {
+    const c = JSON.parse(localStorage.getItem('fj_ctx') || '{}');
+    document.getElementById('ctxBranche').value = c.branche || '';
+    document.getElementById('ctxNamen').value = c.namen || '';
+    document.getElementById('ctxBegriffe').value = c.begriffe || '';
+    document.getElementById('ctxExtra').value = c.extra || '';
+    updateCtxIndicator(c);
+  } catch(e) {}
+}
+function updateCtxIndicator(c) {
+  const hasCtx = c && (c.branche || c.namen || c.begriffe);
+  document.getElementById('ctxIndicator').textContent = hasCtx ? '⚙️ Kontext ✓' : '⚙️ Kontext';
+  document.getElementById('ctxIndicator').style.color = hasCtx ? 'var(--green)' : 'var(--text2)';
+}
+function openCtx() {
+  loadCtx();
+  document.getElementById('ctxPanel').classList.add('open');
+}
+function getWhisperPrompt() {
+  try {
+    const c = JSON.parse(localStorage.getItem('fj_ctx') || '{}');
+    const parts = ['Führungskraft, berufliche Notizen'];
+    if (c.branche) parts.push(c.branche);
+    if (c.namen) parts.push(c.namen);
+    if (c.begriffe) parts.push(c.begriffe);
+    if (c.extra) parts.push(c.extra);
+    return parts.join(', ');
+  } catch(e) { return 'Führungskraft, berufliche Notizen'; }
+}
+document.getElementById('ctxSaveBtn').addEventListener('click', () => {
+  const c = {
+    branche: document.getElementById('ctxBranche').value.trim(),
+    namen: document.getElementById('ctxNamen').value.trim(),
+    begriffe: document.getElementById('ctxBegriffe').value.trim(),
+    extra: document.getElementById('ctxExtra').value.trim()
+  };
+  localStorage.setItem('fj_ctx', JSON.stringify(c));
+  updateCtxIndicator(c);
+  document.getElementById('ctxPanel').classList.remove('open');
+  showToast('Kontext gespeichert ✓');
+});
+document.getElementById('ctxCloseBtn').addEventListener('click', () => {
+  document.getElementById('ctxPanel').classList.remove('open');
 });
 
 function showToast(msg){
