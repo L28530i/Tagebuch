@@ -244,13 +244,20 @@ function initApp() {
 }
 
 document.getElementById('saveKeyBtn').addEventListener('click', () => {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key.startsWith('sk-') && !key.startsWith('gsk_')) { showToast('Ungültiger Key – muss mit sk- oder gsk_ beginnen'); return; }
+  // Clean key: remove whitespace, newlines, invisible chars
+  const raw = document.getElementById('apiKeyInput').value;
+  const key = raw.replace(/[\s\u200B\uFEFF]/g, '');
+  if (key.length < 10) { showToast('Key zu kurz – bitte vollständig einfügen'); return; }
+  if (!key.startsWith('sk-') && !key.startsWith('gsk_')) {
+    showToast('Key beginnt mit: "' + key.slice(0,6) + '..." – erwartet sk- oder gsk_');
+    return;
+  }
   openaiKey = key;
   localStorage.setItem('fj_oai_key', key);
   document.getElementById('apiSetup').style.display = 'none';
   document.getElementById('app').style.display = 'block';
   initMainApp();
+  showToast('Key gespeichert ✓');
 });
 
 function resetKey() {
@@ -496,7 +503,7 @@ STRENGE REGELN:
 - Beginne jeden Abschnitt mit einer fett markierten Überschrift (die Kategorie)
 
 Notizen vom heutigen Tag:
-\${txt}\`;
+${txt}`;
 
   try{
     const res=await fetch("https://api.groq.com/openai/v1/chat/completions",{
