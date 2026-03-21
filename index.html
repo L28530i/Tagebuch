@@ -106,6 +106,21 @@
   .bpri:active{background:rgba(200,169,110,.25);}
   .bpri:disabled{opacity:.4;cursor:not-allowed;}
 
+  /* CONFIRM PANEL */
+  #confirmPanel{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:160;padding:16px;overflow-y:auto;}
+  #confirmPanel.open{display:flex;align-items:flex-start;justify-content:center;}
+  .confirm-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 18px;max-width:500px;width:100%;margin-top:20px;}
+  .confirm-box h3{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--accent);margin-bottom:4px;}
+  .confirm-meta{font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--text2);margin-bottom:14px;}
+  .confirm-orig{background:var(--surface2);border-radius:6px;padding:10px 12px;font-size:.8rem;color:var(--text2);line-height:1.6;margin-bottom:12px;font-style:italic;}
+  .confirm-orig span{font-family:'IBM Plex Mono',monospace;font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);display:block;margin-bottom:4px;}
+  #confirmTextarea{width:100%;background:var(--surface2);border:1.5px solid var(--accent);border-radius:8px;padding:12px 14px;font-size:.9rem;color:var(--text);font-family:'IBM Plex Sans',sans-serif;resize:none;outline:none;line-height:1.6;min-height:80px;}
+  .confirm-actions{display:flex;gap:8px;margin-top:12px;}
+  #confirmSave{flex:1;padding:12px;border-radius:8px;border:1.5px solid var(--green);background:rgba(94,168,122,.1);color:var(--green);font-family:'IBM Plex Sans',sans-serif;font-size:.88rem;cursor:pointer;outline:none;touch-action:manipulation;}
+  #confirmSave:active{background:rgba(94,168,122,.25);}
+  #confirmDiscard{padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text2);font-family:'IBM Plex Sans',sans-serif;font-size:.88rem;cursor:pointer;outline:none;touch-action:manipulation;}
+  #confirmDiscard:active{color:var(--red);border-color:var(--red);}
+
   /* CONTEXT PANEL */
   #ctxPanel{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:150;padding:20px;overflow-y:auto;}
   #ctxPanel.open{display:flex;align-items:flex-start;justify-content:center;}
@@ -220,6 +235,20 @@
       <button class="bpri" id="cpBtn" disabled>📋 Kopieren</button>
       <button class="bpri" id="txBtn" disabled>⬇ TXT</button>
       <button class="bpri" id="pdBtn" disabled>📄 PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM / EDIT PANEL -->
+<div id="confirmPanel">
+  <div class="confirm-box">
+    <h3>✏️ Prüfen &amp; bestätigen</h3>
+    <div class="confirm-meta">KI hat den Text korrigiert – bitte prüfen und bei Bedarf anpassen</div>
+    <div class="confirm-orig" id="confirmOrig"><span>Original (Whisper)</span><span id="confirmOrigText"></span></div>
+    <textarea id="confirmTextarea" rows="4"></textarea>
+    <div class="confirm-actions">
+      <button id="confirmSave">✓ Speichern</button>
+      <button id="confirmDiscard">Verwerfen</button>
     </div>
   </div>
 </div>
@@ -454,10 +483,14 @@ async function stopRec() {
     const text = data.text?.trim();
 
     if (text && text.length > 2) {
-      saveEntry(text, selCat);
-      document.getElementById('live').textContent = '✓ ' + text;
-      document.getElementById('live').className = 'on';
-      setTimeout(()=>{ document.getElementById('live').textContent='Sprich deine Bemerkung… Whisper erkennt alles.'; document.getElementById('live').className=''; }, 2500);
+      // Step 2: KI correction
+      document.getElementById('recSt').textContent = 'KI korrigiert…';
+      document.getElementById('live').textContent = '⏳ Satz wird verbessert…';
+      const corrected = await correctWithAI(text);
+      resetRecBtn();
+      document.getElementById('live').textContent = 'Sprich deine Bemerkung… Whisper erkennt alles.';
+      document.getElementById('live').className = '';
+      showConfirmPanel(text, corrected, selCat);
     } else {
       document.getElementById('live').textContent = 'Nichts erkannt – bitte nochmal.';
       document.getElementById('live').className = '';
@@ -627,6 +660,68 @@ document.getElementById('ctxSaveBtn').addEventListener('click', () => {
 });
 document.getElementById('ctxCloseBtn').addEventListener('click', () => {
   document.getElementById('ctxPanel').classList.remove('open');
+});
+
+// ── AI CORRECTION ─────────────────────────────────────────
+async function correctWithAI(rawText) {
+  try {
+    const ctx = (() => { try { return JSON.parse(localStorage.getItem('fj_ctx')||'{}'); } catch(e){return{};} })();
+    const ctxHint = [ctx.branche, ctx.namen, ctx.begriffe, ctx.extra].filter(Boolean).join(', ');
+    const sysPrompt = `Du bist ein Korrektur-Assistent für gesprochene Notizen einer Führungskraft.
+Kontext: ${ctxHint || 'berufliche Führungsnotizen'}
+
+DEINE AUFGABE: Korrigiere den folgenden transkribierten Text.
+
+REGELN:
+- Vervollständige abgebrochene oder halbfertige Sätze sinnvoll
+- Korrigiere offensichtliche Erkennungsfehler anhand des Kontexts (z.B. falsch gehörte Namen oder Fachbegriffe)
+- Verbessere Grammatik und Satzbau
+- Behalte den GENAUEN INHALT und SINN bei – erfinde NICHTS dazu
+- Wenn du dir bei einem Wort nicht sicher bist, lasse es lieber so wie es ist
+- Antworte NUR mit dem korrigierten Text, ohne Erklärungen`;
+
+    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {"Content-Type":"application/json","Authorization":"Bearer "+openaiKey},
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        max_tokens: 300,
+        messages: [
+          {role:"system", content: sysPrompt},
+          {role:"user", content: rawText}
+        ]
+      })
+    });
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content?.trim() || rawText;
+  } catch(e) {
+    return rawText; // fallback to original if AI fails
+  }
+}
+
+// ── CONFIRM PANEL ─────────────────────────────────────────
+let pendingCat = '';
+function showConfirmPanel(original, corrected, cat) {
+  pendingCat = cat;
+  document.getElementById('confirmOrigText').textContent = original;
+  document.getElementById('confirmTextarea').value = corrected;
+  document.getElementById('confirmPanel').classList.add('open');
+  // Auto-resize textarea
+  const ta = document.getElementById('confirmTextarea');
+  ta.style.height = 'auto';
+  ta.style.height = ta.scrollHeight + 'px';
+}
+document.getElementById('confirmSave').addEventListener('click', () => {
+  const text = document.getElementById('confirmTextarea').value.trim();
+  if (text.length > 2) {
+    saveEntry(text, pendingCat);
+    showToast('Notiz gespeichert ✓');
+  }
+  document.getElementById('confirmPanel').classList.remove('open');
+});
+document.getElementById('confirmDiscard').addEventListener('click', () => {
+  document.getElementById('confirmPanel').classList.remove('open');
+  showToast('Verworfen');
 });
 
 function showToast(msg){
