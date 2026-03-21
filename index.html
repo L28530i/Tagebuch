@@ -482,19 +482,21 @@ document.getElementById('genBtn').addEventListener('click',async()=>{
 
   const prompt=`Du bist ein Schreibassistent für Führungskräfte.
 
-DEINE AUFGABE: Forme die unten stehenden Notizen in einen professionellen, gut lesbaren deutschen Fließtext um.
+DEINE AUFGABE: Schreibe die unten stehenden Notizen als Tagesbericht in der ICH-FORM – so als hätte die Führungskraft den Bericht selbst geschrieben.
 
 STRENGE REGELN:
+- Schreibe IMMER in der Ich-Form (z.B. "Ich habe heute...", "Mir ist aufgefallen...", "Ich habe entschieden...")
 - Verwende AUSSCHLIESSLICH Informationen die in den Notizen stehen
-- Erfinde NICHTS dazu – keine Annahmen, keine Ergänzungen, keine typischen Phrasen
+- Erfinde NICHTS dazu – keine Annahmen, keine Ergänzungen
+- Lasse KEINEN einzigen Inhaltspunkt weg – jede Notiz muss vollständig im Bericht vorkommen
+- Kürze NICHTS – schreibe jeden Punkt vollständig aus
 - Wenn zu einer Kategorie keine Notizen vorhanden sind, schreibe NICHTS dazu
 - Erstelle NUR Abschnitte für Kategorien die tatsächlich Notizen enthalten
-- Fasse zusammen was inhaltlich zusammengehört
-- Schreibe in vollständigen, sachlichen Sätzen
+- Schreibe natürlich und menschlich – nicht wie ein Protokoll
 - Beginne jeden Abschnitt mit einer fett markierten Überschrift (die Kategorie)
 
 Notizen vom heutigen Tag:
-${txt}`;
+\${txt}\`;
 
   try{
     const res=await fetch("https://api.groq.com/openai/v1/chat/completions",{
