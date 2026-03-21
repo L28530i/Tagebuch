@@ -138,7 +138,7 @@
 <header>
   <div>
     <h1>Führungsjournal</h1>
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--text2);margin-top:3px">Groq Whisper · KI-Tagesprotokoll</div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--text2);margin-top:3px">Groq · Whisper + KI-Bericht</div>
   </div>
   <div style="text-align:right">
     <div class="date" id="hDate"></div>
@@ -219,7 +219,7 @@ document.getElementById('manifestLink').href=URL.createObjectURL(mBlob);
 
 // ── SERVICE WORKER ────────────────────────────────────────
 if('serviceWorker' in navigator){
-  const swCode=`self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',e=>{if(e.request.url.includes('api.openai.com')||e.request.url.includes('api.anthropic.com'))return;e.respondWith(caches.open('fj-v2').then(c=>c.match(e.request).then(r=>r||fetch(e.request).then(res=>{c.put(e.request,res.clone());return res;}))));});`;
+  const swCode=`self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',e=>{if(e.request.url.includes('api.openai.com')||e.request.url.includes('api.anthropic.com')||e.request.url.includes('api.groq.com'))return;e.respondWith(caches.open('fj-v2').then(c=>c.match(e.request).then(r=>r||fetch(e.request).then(res=>{c.put(e.request,res.clone());return res;}))));});`;
   const swBlob=new Blob([swCode],{type:'application/javascript'});
   navigator.serviceWorker.register(URL.createObjectURL(swBlob),{scope:'./'}).catch(()=>{});
 }
@@ -482,12 +482,12 @@ Sachlich, präzise, vollständige Sätze. Zusammengehöriges zusammenfassen.
 Notizen:\n${txt}`;
 
   try{
-    const res=await fetch("https://api.anthropic.com/v1/messages",{
-      method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:prompt}]})
+    const res=await fetch("https://api.groq.com/openai/v1/chat/completions",{
+      method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+openaiKey},
+      body:JSON.stringify({model:"llama-3.3-70b-versatile",max_tokens:1000,messages:[{role:"system",content:"Du bist ein professioneller Assistent für Führungskräfte. Antworte immer auf Deutsch."},{role:"user",content:prompt}]})
     });
     const data=await res.json();
-    report=(data.content||[]).map(c=>c.text||'').join('\n')||'Kein Ergebnis.';
+    report=data.choices?.[0]?.message?.content||'Kein Ergebnis.';
     document.getElementById('rc').className='';
     document.getElementById('rc').textContent=report;
     ['cpBtn','txBtn','pdBtn'].forEach(id=>document.getElementById(id).disabled=false);
