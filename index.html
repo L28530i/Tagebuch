@@ -472,14 +472,29 @@ document.getElementById('genBtn').addEventListener('click',async()=>{
     new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})+' · '+entries.length+' Einträge';
   ['cpBtn','txBtn','pdBtn'].forEach(id=>document.getElementById(id).disabled=true);
 
-  const txt=entries.map(e=>`[${e.time}] [${e.cat}] ${e.text}`).join('\n');
-  const prompt=`Du bist ein erfahrener Assistent für Führungskräfte.
-Unten stehen unstrukturierte, sporadisch aufgezeichnete Notizen eines Vorgesetzten vom heutigen Arbeitstag.
-Sie betreffen Mitarbeiter, Aufgaben, Fortschritte, Probleme und Entscheidungen.
-Erstelle einen klar strukturierten, professionellen deutschen Tagesbericht.
-Gliedere ihn in sinnvolle Abschnitte (Mitarbeiter & Tätigkeiten, Arbeitsfortschritt, Offene Punkte, Entscheidungen, Zusammenfassung).
-Sachlich, präzise, vollständige Sätze. Zusammengehöriges zusammenfassen.
-Notizen:\n${txt}`;
+  // Group entries by category
+  const cats = {};
+  entries.forEach(e => {
+    if (!cats[e.cat]) cats[e.cat] = [];
+    cats[e.cat].push(`[${e.time}] ${e.text}`);
+  });
+  const txt = Object.entries(cats).map(([cat, lines]) => `=== ${cat} ===\n${lines.join('\n')}`).join('\n\n');
+
+  const prompt=`Du bist ein Schreibassistent für Führungskräfte.
+
+DEINE AUFGABE: Forme die unten stehenden Notizen in einen professionellen, gut lesbaren deutschen Fließtext um.
+
+STRENGE REGELN:
+- Verwende AUSSCHLIESSLICH Informationen die in den Notizen stehen
+- Erfinde NICHTS dazu – keine Annahmen, keine Ergänzungen, keine typischen Phrasen
+- Wenn zu einer Kategorie keine Notizen vorhanden sind, schreibe NICHTS dazu
+- Erstelle NUR Abschnitte für Kategorien die tatsächlich Notizen enthalten
+- Fasse zusammen was inhaltlich zusammengehört
+- Schreibe in vollständigen, sachlichen Sätzen
+- Beginne jeden Abschnitt mit einer fett markierten Überschrift (die Kategorie)
+
+Notizen vom heutigen Tag:
+${txt}`;
 
   try{
     const res=await fetch("https://api.groq.com/openai/v1/chat/completions",{
