@@ -11,8 +11,6 @@
 <meta name="apple-mobile-web-app-title" content="Führungsjournal">
 <link id="manifestLink" rel="manifest">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -205,6 +203,16 @@ header h1{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;
     <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a> (kostenlos)<br><br>
     ⚠️ Wird nur lokal gespeichert, nie weitergegeben.
   </div>
+</div>
+
+<!-- PIN SETUP -->
+<div id="pinSetup" style="position:fixed;inset:0;background:var(--bg);z-index:199;display:none;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;gap:18px;">
+  <div style="font-size:2.5rem">🔐</div>
+  <h2 style="font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--accent);text-align:center">PIN eingeben</h2>
+  <p style="font-size:.85rem;color:var(--text2);text-align:center;line-height:1.7;max-width:300px">Gib die App-PIN ein um fortzufahren</p>
+  <input type="password" id="pinInput" inputmode="numeric" maxlength="8" placeholder="PIN" style="width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:14px 16px;font-size:1.5rem;color:var(--text);font-family:'IBM Plex Mono',monospace;outline:none;text-align:center;letter-spacing:.3em;">
+  <button id="pinBtn" style="width:100%;padding:15px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(200,169,110,.15);color:var(--accent);font-family:'Playfair Display',serif;font-size:1rem;cursor:pointer;outline:none;">Weiter</button>
+  <div id="pinErr" style="font-size:.8rem;color:var(--red);font-family:'IBM Plex Mono',monospace;display:none">Falsche PIN</div>
 </div>
 
 <!-- MAIN APP -->
@@ -1086,34 +1094,12 @@ $('ocrRetry').addEventListener('click', function(){
 $('ocrCancel').addEventListener('click', function(){ $('ocrOverlay').classList.remove('open'); });
 
 // ═══════════════════════════════════════════════════════════
-// FIREBASE SYNC
+// FIREBASE REST SYNC (no SDK needed)
 // ═══════════════════════════════════════════════════════════
-var fbConfig = {
-  apiKey: "AIzaSyCzowjBMyblK6S_9AMeLJdTsHgZ-HLJr4g",
-  authDomain: "journal-5c29a.firebaseapp.com",
-  databaseURL: "https://journal-5c29a-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "journal-5c29a",
-  storageBucket: "journal-5c29a.firebasestorage.app",
-  messagingSenderId: "276797671423",
-  appId: "1:276797671423:web:44f216bb51d85e13c549ca"
-};
-
-var fbApp = null;
-var db = null;
+var FB_URL = 'https://journal-5c29a-default-rtdb.europe-west1.firebasedatabase.app';
+var FB_SECRET = ''; // set after PIN entry
 var syncEnabled = false;
-
-function initFirebase() {
-  try {
-    fbApp = firebase.initializeApp(fbConfig);
-    db = firebase.database();
-    syncEnabled = true;
-    setSyncDot('on');
-    listenToFirebase();
-  } catch(e) {
-    console.warn('Firebase init failed:', e);
-    setSyncDot('err');
-  }
-}
+var pollInterval = null;
 
 function setSyncDot(state) {
   var dot = document.getElementById('syncDot');
@@ -1122,76 +1108,113 @@ function setSyncDot(state) {
   dot.title = state==='on' ? 'Verbunden ✓' : state==='sync' ? 'Synchronisiert…' : state==='err' ? 'Fehler' : 'Offline';
 }
 
-// ── WRITE TO FIREBASE ─────────────────────────────────────
+function initFirebase() {
+  // Test connection
+  fetch(FB_URL + '/.json?shallow=true')
+    .then(function(r){ 
+      if (r.ok) { 
+        syncEnabled = true; 
+        setSyncDot('on');
+        startPolling();
+        pushLocalToFirebase();
+      } else {
+        setSyncDot('err');
+      }
+    })
+    .catch(function(){ setSyncDot('err'); });
+}
+
+// ── PUSH LOCAL DATA TO FIREBASE ───────────────────────────
+function pushLocalToFirebase() {
+  if (!syncEnabled) return;
+  // Push today's entries
+  entries.forEach(function(e) { fbSaveEntry(e); });
+  // Push containers
+  var containers = loadContainers();
+  containers.forEach(function(c) { fbWriteContainer(c); });
+}
+
+// ── WRITE ─────────────────────────────────────────────────
 function fbSaveEntry(entry) {
-  if (!syncEnabled || !db) return;
-  setSyncDot('sync');
-  db.ref('journal/' + today() + '/' + entry.id).set(entry, function(err){
-    setSyncDot(err ? 'err' : 'on');
-  });
+  if (!syncEnabled) return;
+  fetch(FB_URL + '/journal/' + today() + '/' + entry.id + '.json', {
+    method: 'PUT',
+    body: JSON.stringify(entry)
+  }).then(function(){ setSyncDot('on'); }).catch(function(){ setSyncDot('err'); });
 }
 
 function fbDeleteEntry(id) {
-  if (!syncEnabled || !db) return;
-  db.ref('journal/' + today() + '/' + id).remove();
+  if (!syncEnabled) return;
+  fetch(FB_URL + '/journal/' + today() + '/' + id + '.json', {method:'DELETE'});
 }
 
 function fbSaveContainers(containers) {
-  if (!syncEnabled || !db) return;
+  if (!syncEnabled) return;
   setSyncDot('sync');
-  // Save each container individually by id
-  containers.forEach(function(c) {
-    db.ref('containers/' + c.id).set(c, function(err){
-      setSyncDot(err ? 'err' : 'on');
-    });
-  });
+  containers.forEach(function(c) { fbWriteContainer(c); });
+}
+
+function fbWriteContainer(c) {
+  fetch(FB_URL + '/containers/' + c.id + '.json', {
+    method: 'PUT',
+    body: JSON.stringify(c)
+  }).then(function(){ setSyncDot('on'); }).catch(function(){ setSyncDot('err'); });
 }
 
 function fbDeleteContainer(cid) {
-  if (!syncEnabled || !db) return;
-  db.ref('containers/' + cid).remove();
+  if (!syncEnabled) return;
+  fetch(FB_URL + '/containers/' + cid + '.json', {method:'DELETE'});
 }
 
-// ── LISTEN FROM FIREBASE (live updates) ───────────────────
-var fbListening = false;
-function listenToFirebase() {
-  if (fbListening) return;
-  fbListening = true;
+// ── POLL FOR CHANGES (every 5 seconds) ────────────────────
+function startPolling() {
+  if (pollInterval) clearInterval(pollInterval);
+  pollFromFirebase();
+  pollInterval = setInterval(pollFromFirebase, 5000);
+}
 
-  // Listen to today's journal entries
-  db.ref('journal/' + today()).on('value', function(snap) {
-    var data = snap.val();
-    if (data) {
-      var remote = Object.values(data);
-      remote.sort(function(a,b){ return a.id - b.id; });
-      entries = remote;
-      try { localStorage.setItem('fj_'+today(), JSON.stringify(entries)); } catch(ex){}
-      render();
-    }
-    setSyncDot('on');
-  });
+function pollFromFirebase() {
+  if (!syncEnabled) return;
 
-  // Listen to containers
-  db.ref('containers').on('value', function(snap) {
-    var data = snap.val();
-    if (data) {
-      var remote = Object.values(data);
-      // Always overwrite local with Firebase data (Firebase is source of truth)
-      localStorage.setItem('fj_containers', JSON.stringify(remote));
-      renderContainers();
-    } else {
-      // Firebase empty - keep local
-      renderContainers();
-    }
-    setSyncDot('on');
-  });
+  // Poll journal for today
+  fetch(FB_URL + '/journal/' + today() + '.json')
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      if (data && typeof data === 'object') {
+        var remote = Object.values(data).filter(function(e){ return e && e.id; });
+        remote.sort(function(a,b){ return a.id - b.id; });
+        var localJSON = JSON.stringify(entries);
+        var remoteJSON = JSON.stringify(remote);
+        if (localJSON !== remoteJSON) {
+          entries = remote;
+          try { localStorage.setItem('fj_'+today(), JSON.stringify(entries)); } catch(ex){}
+          render();
+        }
+      }
+      setSyncDot('on');
+    }).catch(function(){ setSyncDot('err'); });
+
+  // Poll containers
+  fetch(FB_URL + '/containers.json')
+    .then(function(r){ return r.json(); })
+    .then(function(data) {
+      if (data && typeof data === 'object') {
+        var remote = Object.values(data).filter(function(c){ return c && c.id; });
+        var localJSON = JSON.stringify(loadContainers());
+        var remoteJSON = JSON.stringify(remote);
+        if (localJSON !== remoteJSON) {
+          localStorage.setItem('fj_containers', JSON.stringify(remote));
+          renderContainers();
+        }
+      }
+    }).catch(function(){});
 }
 
 // ── PATCH saveEntry TO ALSO SYNC ──────────────────────────
-var _origSaveEntry = null; // will be set after saveEntry is defined
+var _origSaveEntry = null;
 
 // ── PATCH saveContainers TO ALSO SYNC ────────────────────
-var _origSaveContainers = null; // will be set after saveContainers is defined
+var _origSaveContainers = null;
 
 // ═══════════════════════════════════════════════════════════
 // BACKUP SYSTEM
@@ -1254,7 +1277,55 @@ function startBackupTimer() {
 // ═══════════════════════════════════════════════════════════
 // START
 // ═══════════════════════════════════════════════════════════
-initApp();
+// ═══════════════════════════════════════════════════════════
+// PIN PROTECTION
+// ═══════════════════════════════════════════════════════════
+var APP_PIN = '1234'; // Change this to your desired PIN
+var pinVerified = false;
+
+function checkPin() {
+  // Check if PIN already verified this session
+  if (sessionStorage.getItem('fj_pin_ok') === 'yes') {
+    pinVerified = true;
+    return true;
+  }
+  return false;
+}
+
+function showPinScreen() {
+  document.getElementById('pinSetup').style.display = 'flex';
+}
+
+document.getElementById('pinBtn').addEventListener('click', function(){
+  var entered = document.getElementById('pinInput').value.trim();
+  if (entered === APP_PIN) {
+    sessionStorage.setItem('fj_pin_ok', 'yes');
+    pinVerified = true;
+    document.getElementById('pinSetup').style.display = 'none';
+    document.getElementById('pinErr').style.display = 'none';
+    initApp();
+  } else {
+    document.getElementById('pinErr').style.display = 'block';
+    document.getElementById('pinInput').value = '';
+  }
+});
+document.getElementById('pinInput').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') document.getElementById('pinBtn').click();
+});
+
+// Start with PIN check
+if (checkPin()) {
+  initApp();
+} else {
+  // Check if API key exists - if not, show API setup first
+  var savedKey = localStorage.getItem('fj_oai_key');
+  if (savedKey) {
+    showPinScreen();
+  } else {
+    // Show API setup, then PIN after
+    initApp();
+  }
+}
 startBackupTimer();
 </script>
 </body>
