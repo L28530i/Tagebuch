@@ -10,153 +10,199 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Führungsjournal">
 <link id="manifestLink" rel="manifest">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#0f0f0f;--surface:#1a1a1a;--surface2:#222;--border:#2e2e2e;--accent:#c8a96e;--accent2:#e8c98e;--text:#e8e4dc;--text2:#8a8680;--red:#e05555;--green:#5ea87a;}
-  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-  body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-weight:300;min-height:100vh;padding-bottom:90px;}
+:root {
+  --bg:#0f0f0f; --surface:#1a1a1a; --surface2:#222;
+  --border:#2e2e2e; --accent:#c8a96e; --accent2:#e8c98e;
+  --text:#e8e4dc; --text2:#8a8680; --red:#e05555; --green:#5ea87a;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-weight:300;min-height:100vh;padding-bottom:90px;}
 
-  /* API KEY SETUP */
-  #apiSetup{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;gap:20px;}
-  #apiSetup h2{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--accent);text-align:center;}
-  #apiSetup p{font-size:.85rem;color:var(--text2);text-align:center;line-height:1.7;max-width:320px;}
-  #apiKeyInput{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:14px 16px;font-size:.9rem;color:var(--text);font-family:'IBM Plex Mono',monospace;outline:none;letter-spacing:.04em;}
-  #apiKeyInput:focus{border-color:var(--accent);}
-  #apiKeyInput::placeholder{color:var(--text2);letter-spacing:0;font-family:'IBM Plex Sans',sans-serif;}
-  #saveKeyBtn{width:100%;padding:15px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(200,169,110,.15);color:var(--accent);font-family:'Playfair Display',serif;font-size:1rem;cursor:pointer;outline:none;}
-  #saveKeyBtn:active{background:rgba(200,169,110,.3);}
-  .key-note{font-size:.72rem;color:var(--text2);text-align:center;font-family:'IBM Plex Mono',monospace;line-height:1.6;}
-  #apiSetup a{color:var(--accent);font-size:.78rem;}
+/* API SETUP */
+#apiSetup{position:fixed;inset:0;background:var(--bg);z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;gap:18px;}
+#apiSetup h2{font-family:'Playfair Display',serif;font-size:1.5rem;color:var(--accent);text-align:center;}
+#apiSetup p{font-size:.85rem;color:var(--text2);text-align:center;line-height:1.7;max-width:320px;}
+#apiKeyInput{width:100%;background:var(--surface);border:1.5px solid var(--border);border-radius:8px;padding:14px 16px;font-size:.9rem;color:var(--text);font-family:'IBM Plex Mono',monospace;outline:none;}
+#apiKeyInput:focus{border-color:var(--accent);}
+#apiKeyInput::placeholder{color:var(--text2);font-family:'IBM Plex Sans',sans-serif;}
+#saveKeyBtn{width:100%;padding:15px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(200,169,110,.15);color:var(--accent);font-family:'Playfair Display',serif;font-size:1rem;cursor:pointer;outline:none;}
+.key-note{font-size:.72rem;color:var(--text2);text-align:center;font-family:'IBM Plex Mono',monospace;line-height:1.6;}
+.key-note a{color:var(--accent);}
 
-  /* INSTALL BANNER */
-  #ib{display:none;background:rgba(200,169,110,.12);border-bottom:1px solid rgba(200,169,110,.3);padding:10px 16px;align-items:center;gap:10px;}
-  #ib.show{display:flex;}
-  #ib span{flex:1;font-size:.78rem;color:var(--accent);font-family:'IBM Plex Mono',monospace;}
-  #ibBtn{padding:6px 14px;border-radius:20px;border:1.5px solid var(--accent);background:rgba(200,169,110,.15);color:var(--accent);font-size:.75rem;cursor:pointer;outline:none;white-space:nowrap;}
-  #ibX{background:none;border:none;color:var(--text2);cursor:pointer;font-size:1.2rem;padding:0;}
+/* INSTALL BANNER */
+#ib{display:none;background:rgba(200,169,110,.12);border-bottom:1px solid rgba(200,169,110,.3);padding:10px 16px;align-items:center;gap:10px;}
+#ib.show{display:flex;}
+#ib span{flex:1;font-size:.78rem;color:var(--accent);font-family:'IBM Plex Mono',monospace;}
+#ibBtn{padding:6px 14px;border-radius:20px;border:1.5px solid var(--accent);background:rgba(200,169,110,.15);color:var(--accent);font-size:.75rem;cursor:pointer;outline:none;}
+#ibX{background:none;border:none;color:var(--text2);cursor:pointer;font-size:1.2rem;padding:0;}
 
-  header{padding:20px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-end;justify-content:space-between;background:linear-gradient(180deg,#181818 0%,var(--bg) 100%);position:sticky;top:0;z-index:10;}
-  header h1{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--accent);}
-  .date{font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--text2);text-align:right;}
-  #keyIndicator{font-size:.65rem;font-family:'IBM Plex Mono',monospace;color:var(--green);cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+/* HEADER */
+header{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:flex-end;justify-content:space-between;background:linear-gradient(180deg,#181818 0%,var(--bg) 100%);position:sticky;top:0;z-index:10;}
+header h1{font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:700;color:var(--accent);}
+.hdr-sub{font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--text2);margin-top:3px;}
+.hdr-right{text-align:right;}
+.date{font-family:'IBM Plex Mono',monospace;font-size:.65rem;color:var(--text2);}
+.hdr-link{font-size:.62rem;font-family:'IBM Plex Mono',monospace;color:var(--accent);cursor:pointer;text-decoration:underline;text-underline-offset:3px;display:block;margin-top:2px;}
 
-  .sec{padding:14px 20px;}
-  .lbl{font-family:'IBM Plex Mono',monospace;font-size:.63rem;text-transform:uppercase;letter-spacing:.12em;color:var(--text2);margin-bottom:10px;}
-  .cat-row{display:flex;flex-wrap:wrap;gap:7px;}
-  .cat{padding:6px 13px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:'IBM Plex Sans',sans-serif;font-size:.76rem;cursor:pointer;transition:all .15s;outline:none;touch-action:manipulation;}
-  .cat.on{border-color:var(--accent);color:var(--accent);background:rgba(200,169,110,.08);}
+/* NAV TABS */
+.nav-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:62px;z-index:9;}
+.nav-tab{flex:1;padding:10px 8px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;touch-action:manipulation;}
+.nav-tab.on{color:var(--accent);border-bottom-color:var(--accent);}
 
-  .mode-row{display:flex;gap:8px;padding:12px 20px 0;}
-  .mbtn{padding:7px 18px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:.76rem;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all .15s;outline:none;touch-action:manipulation;}
-  .mbtn.on{border-color:var(--accent);color:var(--accent);background:rgba(200,169,110,.08);}
+/* PAGES */
+.page{display:none;} .page.on{display:block;}
+.sec{padding:14px 20px;}
+.lbl{font-family:'IBM Plex Mono',monospace;font-size:.63rem;text-transform:uppercase;letter-spacing:.12em;color:var(--text2);margin-bottom:10px;}
 
-  /* WHISPER RECORD */
-  .rec-area{display:flex;flex-direction:column;align-items:center;padding:22px 20px 14px;gap:14px;}
-  #recBtn{width:86px;height:86px;border-radius:50%;border:2.5px solid var(--accent);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;outline:none;touch-action:manipulation;flex-direction:column;gap:4px;}
-  #recBtn:active{transform:scale(.95);}
-  #recBtn.rec{border-color:var(--red);background:rgba(224,85,85,.12);animation:pulse 1.4s infinite;}
-  #recBtn.processing{border-color:var(--accent2);background:rgba(200,169,110,.1);animation:none;}
-  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,85,85,.4)}50%{box-shadow:0 0 0 14px rgba(224,85,85,0)}}
-  #recLabel{font-size:.5rem;font-family:'IBM Plex Mono',monospace;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;}
-  #recSt{font-family:'IBM Plex Mono',monospace;font-size:.73rem;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;}
-  #recSt.on{color:var(--red);}
-  #recSt.proc{color:var(--accent2);}
-  #live{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.88rem;color:var(--text2);font-style:italic;min-height:50px;line-height:1.6;width:100%;transition:all .3s;}
-  #live.on{border-color:var(--accent);color:var(--text);font-style:normal;}
-  #live.proc{border-color:var(--accent2);color:var(--accent2);}
+/* CATEGORIES */
+.cat-row{display:flex;flex-wrap:wrap;gap:7px;}
+.cat{padding:6px 13px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:'IBM Plex Sans',sans-serif;font-size:.76rem;cursor:pointer;transition:all .15s;outline:none;touch-action:manipulation;}
+.cat.on{border-color:var(--accent);color:var(--accent);background:rgba(200,169,110,.08);}
 
-  /* TIMER */
-  #recTimer{font-family:'IBM Plex Mono',monospace;font-size:1.1rem;color:var(--red);letter-spacing:.1em;display:none;}
-  #recTimer.on{display:block;}
+/* MODE TOGGLE */
+.mode-row{display:flex;gap:8px;padding:12px 20px 0;}
+.mbtn{padding:7px 18px;border-radius:20px;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-size:.76rem;font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all .15s;outline:none;touch-action:manipulation;}
+.mbtn.on{border-color:var(--accent);color:var(--accent);background:rgba(200,169,110,.08);}
 
-  /* TEXT INPUT */
-  .txt-area{padding:14px 20px 8px;}
-  .mrow{display:flex;gap:8px;}
-  #mi{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.88rem;color:var(--text);font-family:'IBM Plex Sans',sans-serif;resize:none;outline:none;line-height:1.6;transition:border-color .2s;}
-  #mi:focus{border-color:var(--accent);}
-  #mi::placeholder{color:var(--text2);font-style:italic;}
-  #msBtn{padding:0 14px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(200,169,110,.1);color:var(--accent);font-family:'IBM Plex Sans',sans-serif;font-size:.8rem;cursor:pointer;outline:none;align-self:flex-end;height:44px;white-space:nowrap;touch-action:manipulation;}
-  #msBtn:active{background:rgba(200,169,110,.25);}
+/* RECORD */
+.rec-area{display:flex;flex-direction:column;align-items:center;padding:20px 20px 14px;gap:13px;}
+#recBtn{width:86px;height:86px;border-radius:50%;border:2.5px solid var(--accent);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:4px;transition:all .2s;outline:none;touch-action:manipulation;}
+#recBtn:active{transform:scale(.95);}
+#recBtn.rec{border-color:var(--red);background:rgba(224,85,85,.12);animation:pulse 1.4s infinite;}
+#recBtn.proc{border-color:var(--accent2);background:rgba(200,169,110,.1);}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(224,85,85,.4)}50%{box-shadow:0 0 0 14px rgba(224,85,85,0)}}
+#recLabel{font-size:.5rem;font-family:'IBM Plex Mono',monospace;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;}
+#recSt{font-family:'IBM Plex Mono',monospace;font-size:.73rem;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;}
+#recSt.on{color:var(--red);} #recSt.proc{color:var(--accent2);}
+#recTimer{font-family:'IBM Plex Mono',monospace;font-size:1.1rem;color:var(--red);letter-spacing:.1em;display:none;}
+#recTimer.on{display:block;}
+#live{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.88rem;color:var(--text2);font-style:italic;min-height:50px;line-height:1.6;width:100%;transition:all .3s;}
+#live.on{border-color:var(--accent);color:var(--text);font-style:normal;}
+#live.proc{border-color:var(--accent2);color:var(--accent2);}
 
-  .elist{display:flex;flex-direction:column;gap:9px;}
-  .ec{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 13px;display:flex;gap:11px;align-items:flex-start;}
-  .et{font-family:'IBM Plex Mono',monospace;font-size:.63rem;color:var(--text2);white-space:nowrap;padding-top:2px;min-width:40px;}
-  .eb{flex:1;}
-  .ecat{font-size:.6rem;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:3px;}
-  .etxt{font-size:.86rem;line-height:1.5;color:var(--text);}
-  .edel{background:none;border:none;cursor:pointer;color:var(--text2);font-size:1.1rem;padding:2px 4px;line-height:1;opacity:.5;touch-action:manipulation;}
-  .edel:active{opacity:1;color:var(--red);}
-  .empty{text-align:center;color:var(--text2);font-size:.8rem;padding:24px 0;font-family:'IBM Plex Mono',monospace;}
+/* TEXT INPUT */
+.txt-area{padding:14px 20px 8px;}
+.mrow{display:flex;gap:8px;}
+#mi{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:.88rem;color:var(--text);font-family:'IBM Plex Sans',sans-serif;resize:none;outline:none;line-height:1.6;transition:border-color .2s;}
+#mi:focus{border-color:var(--accent);}
+#mi::placeholder{color:var(--text2);font-style:italic;}
+#msBtn{padding:0 14px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(200,169,110,.1);color:var(--accent);font-family:'IBM Plex Sans',sans-serif;font-size:.8rem;cursor:pointer;outline:none;align-self:flex-end;height:44px;white-space:nowrap;touch-action:manipulation;}
 
-  #genBtn{width:calc(100% - 40px);margin:0 20px;padding:15px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(200,169,110,.1);color:var(--accent);font-family:'Playfair Display',serif;font-size:1rem;letter-spacing:.04em;cursor:pointer;transition:all .2s;outline:none;touch-action:manipulation;}
-  #genBtn:active{background:rgba(200,169,110,.2);}
-  #genBtn:disabled{opacity:.35;cursor:not-allowed;}
+/* ENTRIES */
+.elist{display:flex;flex-direction:column;gap:9px;}
+.ec{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 13px;display:flex;gap:10px;align-items:flex-start;}
+.et{font-family:'IBM Plex Mono',monospace;font-size:.63rem;color:var(--text2);white-space:nowrap;padding-top:2px;min-width:40px;}
+.dots{display:grid;grid-template-columns:1fr 1fr;gap:2px;flex-shrink:0;padding-top:2px;}
+.dot{width:9px;height:9px;border-radius:2px;}
+.eb{flex:1;}
+.ecat{font-size:.6rem;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:3px;}
+.etxt{font-size:.86rem;line-height:1.5;color:var(--text);}
+.edel{background:none;border:none;cursor:pointer;color:var(--text2);font-size:1.1rem;padding:2px 4px;line-height:1;opacity:.5;touch-action:manipulation;}
+.edel:active{opacity:1;color:var(--red);}
+.empty{text-align:center;color:var(--text2);font-size:.8rem;padding:24px 0;font-family:'IBM Plex Mono',monospace;}
 
-  .moverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100;padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-  .moverlay.open{display:flex;align-items:flex-start;justify-content:center;}
-  .modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px 18px;max-width:600px;width:100%;margin-top:16px;}
-  .modal h2{font-family:'Playfair Display',serif;font-size:1.25rem;color:var(--accent);margin-bottom:5px;}
-  .mmeta{font-family:'IBM Plex Mono',monospace;font-size:.63rem;color:var(--text2);margin-bottom:18px;}
-  #rc{font-size:.88rem;line-height:1.75;color:var(--text);white-space:pre-wrap;background:var(--surface2);border-radius:8px;padding:14px;min-height:120px;}
-  #rc.loading{color:var(--text2);font-style:italic;}
-  .mact{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
-  .bsec{padding:9px 16px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'IBM Plex Sans',sans-serif;font-size:.8rem;cursor:pointer;outline:none;touch-action:manipulation;}
-  .bsec:active{border-color:var(--accent);color:var(--accent);}
-  .bpri{padding:9px 16px;border-radius:6px;border:1.5px solid var(--accent);background:rgba(200,169,110,.1);color:var(--accent);font-family:'IBM Plex Sans',sans-serif;font-size:.8rem;cursor:pointer;outline:none;touch-action:manipulation;}
-  .bpri:active{background:rgba(200,169,110,.25);}
-  .bpri:disabled{opacity:.4;cursor:not-allowed;}
+/* GENERATE BTN */
+#genBtn{width:calc(100% - 40px);margin:0 20px;padding:15px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(200,169,110,.1);color:var(--accent);font-family:'Playfair Display',serif;font-size:1rem;letter-spacing:.04em;cursor:pointer;transition:all .2s;outline:none;touch-action:manipulation;}
+#genBtn:active{background:rgba(200,169,110,.2);}
+#genBtn:disabled{opacity:.35;cursor:not-allowed;}
 
-  /* WORKER COLORS */
-  .dots{display:flex;flex-wrap:wrap;gap:2px;width:20px;flex-shrink:0;padding-top:3px;}
-  .dot{width:9px;height:9px;border-radius:2px;}
+/* MODALS */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:100;padding:16px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
+.overlay.open{display:flex;align-items:flex-start;justify-content:center;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 18px;max-width:500px;width:100%;margin-top:16px;}
+.modal h2{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--accent);margin-bottom:5px;}
+.modal h3{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--accent);margin-bottom:14px;}
+.mmeta{font-family:'IBM Plex Mono',monospace;font-size:.63rem;color:var(--text2);margin-bottom:16px;}
+#rc{font-size:.88rem;line-height:1.75;color:var(--text);white-space:pre-wrap;background:var(--surface2);border-radius:8px;padding:14px;min-height:120px;}
+#rc.loading{color:var(--text2);font-style:italic;}
+.mact{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.bsec{padding:9px 16px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'IBM Plex Sans',sans-serif;font-size:.8rem;cursor:pointer;outline:none;touch-action:manipulation;}
+.bsec:active{border-color:var(--accent);color:var(--accent);}
+.bpri{padding:9px 16px;border-radius:6px;border:1.5px solid var(--accent);background:rgba(200,169,110,.1);color:var(--accent);font-family:'IBM Plex Sans',sans-serif;font-size:.8rem;cursor:pointer;outline:none;touch-action:manipulation;}
+.bpri:active{background:rgba(200,169,110,.25);}
+.bpri:disabled{opacity:.4;cursor:not-allowed;}
 
-  /* CONFIRM PANEL */
-  #confirmPanel{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:160;padding:16px;overflow-y:auto;}
-  #confirmPanel.open{display:flex;align-items:flex-start;justify-content:center;}
-  .confirm-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 18px;max-width:500px;width:100%;margin-top:20px;}
-  .confirm-box h3{font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--accent);margin-bottom:4px;}
-  .confirm-meta{font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--text2);margin-bottom:14px;}
-  .confirm-orig{background:var(--surface2);border-radius:6px;padding:10px 12px;font-size:.8rem;color:var(--text2);line-height:1.6;margin-bottom:12px;font-style:italic;}
-  .confirm-orig span{font-family:'IBM Plex Mono',monospace;font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);display:block;margin-bottom:4px;}
-  #confirmTextarea{width:100%;background:var(--surface2);border:1.5px solid var(--accent);border-radius:8px;padding:12px 14px;font-size:.9rem;color:var(--text);font-family:'IBM Plex Sans',sans-serif;resize:none;outline:none;line-height:1.6;min-height:80px;}
-  .confirm-actions{display:flex;gap:8px;margin-top:12px;}
-  #confirmSave{flex:1;padding:12px;border-radius:8px;border:1.5px solid var(--green);background:rgba(94,168,122,.1);color:var(--green);font-family:'IBM Plex Sans',sans-serif;font-size:.88rem;cursor:pointer;outline:none;touch-action:manipulation;}
-  #confirmSave:active{background:rgba(94,168,122,.25);}
-  #confirmDiscard{padding:12px 16px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text2);font-family:'IBM Plex Sans',sans-serif;font-size:.88rem;cursor:pointer;outline:none;touch-action:manipulation;}
-  #confirmDiscard:active{color:var(--red);border-color:var(--red);}
+/* FORM FIELDS */
+.fld{margin-bottom:12px;}
+.fld label{font-family:'IBM Plex Mono',monospace;font-size:.62rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text2);display:block;margin-bottom:5px;}
+.fld input,.fld textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-size:.88rem;color:var(--text);font-family:'IBM Plex Sans',sans-serif;outline:none;resize:none;line-height:1.6;}
+.fld input:focus,.fld textarea:focus{border-color:var(--accent);}
+.fld input::placeholder,.fld textarea::placeholder{color:var(--text2);font-style:italic;}
+.btn-green{padding:12px;border-radius:8px;border:1.5px solid var(--green);background:rgba(94,168,122,.1);color:var(--green);font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;cursor:pointer;outline:none;touch-action:manipulation;}
+.btn-green:active{background:rgba(94,168,122,.25);}
+.btn-cancel{padding:10px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text2);font-family:'IBM Plex Sans',sans-serif;font-size:.82rem;cursor:pointer;outline:none;touch-action:manipulation;}
 
-  /* CONTEXT PANEL */
-  #ctxPanel{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:150;padding:20px;overflow-y:auto;}
-  #ctxPanel.open{display:flex;align-items:flex-start;justify-content:center;}
-  .ctx-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px 18px;max-width:500px;width:100%;margin-top:20px;}
-  .ctx-box h2{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--accent);margin-bottom:6px;}
-  .ctx-box p{font-size:.8rem;color:var(--text2);line-height:1.6;margin-bottom:16px;}
-  .ctx-field{margin-bottom:14px;}
-  .ctx-field label{font-family:'IBM Plex Mono',monospace;font-size:.63rem;text-transform:uppercase;letter-spacing:.1em;color:var(--text2);display:block;margin-bottom:6px;}
-  .ctx-field textarea,.ctx-field input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:.85rem;color:var(--text);font-family:'IBM Plex Sans',sans-serif;outline:none;resize:none;line-height:1.6;}
-  .ctx-field textarea:focus,.ctx-field input:focus{border-color:var(--accent);}
-  .ctx-field textarea::placeholder,.ctx-field input::placeholder{color:var(--text2);font-style:italic;}
-  #ctxSaveBtn{width:100%;padding:13px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(200,169,110,.1);color:var(--accent);font-family:'Playfair Display',serif;font-size:.95rem;cursor:pointer;outline:none;margin-top:4px;}
-  #ctxSaveBtn:active{background:rgba(200,169,110,.25);}
-  #ctxCloseBtn{width:100%;padding:10px;border-radius:8px;border:1px solid var(--border);background:none;color:var(--text2);font-family:'IBM Plex Sans',sans-serif;font-size:.82rem;cursor:pointer;outline:none;margin-top:8px;}
-  #ctxIndicator{font-size:.62rem;font-family:'IBM Plex Mono',monospace;color:var(--green);cursor:pointer;text-decoration:underline;text-underline-offset:3px;margin-top:2px;}
+/* CONTAINER CARDS */
+.cbox{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px;}
+.cbox-hdr{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.cnum{font-family:'IBM Plex Mono',monospace;font-size:.95rem;color:var(--accent);font-weight:500;}
+.cbadge{font-size:.6rem;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.08em;padding:3px 8px;border-radius:10px;border:1px solid;}
+.cbadge.active{color:var(--green);border-color:var(--green);background:rgba(94,168,122,.1);}
+.cbadge.done{color:var(--text2);border-color:var(--border);background:var(--surface2);}
+.cdur{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:.63rem;color:var(--text2);}
+.cinfo{font-size:.78rem;color:var(--text2);margin-bottom:5px;}
+.ctasks{font-size:.78rem;color:var(--text);line-height:1.6;white-space:pre-wrap;}
+.cslog{margin-top:8px;display:flex;flex-direction:column;gap:4px;}
+.csitem{font-size:.78rem;color:var(--text2);padding:5px 8px;background:var(--surface2);border-radius:5px;line-height:1.5;}
+.cstime{font-family:'IBM Plex Mono',monospace;font-size:.6rem;color:var(--accent);margin-right:6px;}
+.cacts{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap;}
+.cact{padding:7px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-family:'IBM Plex Sans',sans-serif;font-size:.75rem;cursor:pointer;outline:none;touch-action:manipulation;}
+.cact:active{border-color:var(--accent);color:var(--accent);}
+.cact.g{border-color:var(--green);color:var(--green);background:rgba(94,168,122,.08);}
+.cact.r{border-color:var(--red);color:var(--red);background:rgba(224,85,85,.08);}
 
-  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--accent);color:var(--accent);padding:10px 20px;border-radius:20px;font-size:.8rem;font-family:'IBM Plex Mono',monospace;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
-  .toast.show{opacity:1;}
+/* CONFIRM PANEL */
+.confirm-orig{background:var(--surface2);border-radius:6px;padding:10px 12px;font-size:.8rem;color:var(--text2);line-height:1.6;margin-bottom:12px;font-style:italic;}
+.confirm-orig span{font-family:'IBM Plex Mono',monospace;font-size:.6rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);display:block;margin-bottom:4px;}
+#confirmTA{width:100%;background:var(--surface2);border:1.5px solid var(--accent);border-radius:8px;padding:12px 14px;font-size:.9rem;color:var(--text);font-family:'IBM Plex Sans',sans-serif;resize:none;outline:none;line-height:1.6;min-height:80px;}
+
+/* CTX PANEL */
+#ctxIndicator{font-size:.62rem;font-family:'IBM Plex Mono',monospace;cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+
+/* QR SCANNER */
+#qrOverlay{display:none;position:fixed;inset:0;background:#000;z-index:201;flex-direction:column;align-items:center;justify-content:center;}
+#qrOverlay.open{display:flex;}
+#qrFrame{position:relative;width:100%;max-width:400px;}
+#qrVideo{width:100%;border-radius:12px;display:block;}
+#qrFrame::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:200px;height:200px;border:3px solid var(--accent);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,.5);pointer-events:none;}
+.qr-hint{color:var(--text2);font-family:'IBM Plex Mono',monospace;font-size:.72rem;margin-top:14px;text-align:center;}
+.qr-close{margin-top:14px;padding:12px 32px;border-radius:20px;border:1.5px solid var(--accent);background:rgba(200,169,110,.1);color:var(--accent);font-family:'IBM Plex Sans',sans-serif;font-size:.88rem;cursor:pointer;outline:none;}
+
+/* OCR OVERLAY */
+#ocrOverlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:201;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+#ocrOverlay.open{display:flex;}
+#ocrPreview{width:100%;border-radius:8px;display:none;margin-bottom:12px;max-height:200px;object-fit:contain;}
+#ocrResultInput{width:100%;background:var(--surface2);border:1.5px solid var(--accent);border-radius:7px;padding:10px 12px;font-size:1rem;color:var(--text);font-family:'IBM Plex Mono',monospace;outline:none;letter-spacing:.08em;margin-top:8px;}
+
+/* SYNC INDICATOR */
+#syncDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--text2);margin-left:6px;vertical-align:middle;transition:background .3s;}
+#syncDot.on{background:var(--green);box-shadow:0 0 6px var(--green);}
+#syncDot.err{background:var(--red);}
+#syncDot.sync{background:var(--accent);animation:blink .7s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--accent);color:var(--accent);padding:10px 20px;border-radius:20px;font-size:.8rem;font-family:'IBM Plex Mono',monospace;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;}
 </style>
 </head>
 <body>
 
-<!-- API KEY SETUP SCREEN -->
+<!-- API SETUP -->
 <div id="apiSetup">
   <div style="font-size:2.5rem">🎙</div>
-  <h2>OpenAI API Key<br>eingeben</h2>
-  <p>Für die hochwertige Whisper-Spracherkennung wird dein OpenAI API Key benötigt. Er wird nur lokal auf deinem Gerät gespeichert.</p>
-  <input type="password" id="apiKeyInput" placeholder="gsk_...  oder  sk-proj-..." autocomplete="off" autocorrect="off" spellcheck="false">
-  <button id="saveKeyBtn">Speichern & App starten</button>
+  <h2>Groq API Key<br>eingeben</h2>
+  <p>Für Spracherkennung und KI-Bericht. Kostenlos auf console.groq.com</p>
+  <input type="password" id="apiKeyInput" placeholder="gsk_... oder sk-proj-..." autocomplete="off" spellcheck="false">
+  <button id="saveKeyBtn">Speichern &amp; App starten</button>
   <div class="key-note">
     Key findest du unter:<br>
-    <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a><br><br>
+    <a href="https://console.groq.com/keys" target="_blank">console.groq.com/keys</a> (kostenlos)<br><br>
     ⚠️ Wird nur lokal gespeichert, nie weitergegeben.
   </div>
 </div>
@@ -173,14 +219,23 @@
 <header>
   <div>
     <h1>Führungsjournal</h1>
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:.68rem;color:var(--text2);margin-top:3px">Groq · Whisper + KI-Bericht</div>
+    <div class="hdr-sub">Groq · Whisper + KI-Bericht <span id="syncDot" title="Sync-Status"></span></div>
   </div>
-  <div style="text-align:right">
+  <div class="hdr-right">
     <div class="date" id="hDate"></div>
-    <div id="keyIndicator" onclick="resetKey()">🔑 Key ändern</div>
-    <div id="ctxIndicator" onclick="openCtx()">⚙️ Kontext</div>
+    <span class="hdr-link" onclick="resetKey()">🔑 Key ändern</span>
+    <span class="hdr-link" id="ctxIndicator" onclick="openCtx()">⚙️ Kontext</span>
+    <span class="hdr-link" onclick="downloadBackup()" title="Manuelles Backup">💾 Backup</span>
   </div>
 </header>
+
+<div class="nav-tabs">
+  <div class="nav-tab on" id="tabJ" onclick="switchPage('j')">📋 Tagesjournal</div>
+  <div class="nav-tab" id="tabC" onclick="switchPage('c')">📦 Container</div>
+</div>
+
+<!-- JOURNAL PAGE -->
+<div id="pageJ" class="page on">
 
 <div class="sec">
   <div class="lbl">Kategorie</div>
@@ -211,12 +266,12 @@
   </button>
   <div id="recTimer">00:00</div>
   <div id="recSt">Antippen &amp; halten zum Sprechen</div>
-  <div id="live">Sprich deine Bemerkung… Whisper erkennt alles.</div>
+  <div id="live">Sprich deine Bemerkung…</div>
 </div>
 
 <div class="txt-area" id="txArea" style="display:none">
   <div class="mrow">
-    <textarea id="mi" rows="4" placeholder="Bemerkung tippen… z.B. 'Thomas hat die Lieferliste fertiggestellt, ca. 2h'"></textarea>
+    <textarea id="mi" rows="4" placeholder="Bemerkung tippen…"></textarea>
     <button id="msBtn">Speichern</button>
   </div>
 </div>
@@ -229,13 +284,39 @@
 <div style="height:14px"></div>
 <button id="genBtn" disabled>✦ Tagesbericht generieren</button>
 
-<div class="moverlay" id="mOv">
+</div><!-- end pageJ -->
+
+<!-- CONTAINER PAGE -->
+<div id="pageC" class="page">
+
+<div class="sec">
+  <div class="lbl">Aktive Container <span id="cActCnt" style="color:var(--accent);font-family:'IBM Plex Mono',monospace">0</span></div>
+  <div id="cActList"><div class="empty">Keine aktiven Container</div></div>
+</div>
+
+<div style="padding:0 20px">
+  <button id="cNewBtn" style="width:100%;padding:14px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(200,169,110,.1);color:var(--accent);font-family:'Playfair Display',serif;font-size:.95rem;cursor:pointer;outline:none;touch-action:manipulation;">+ Neuen Container erfassen</button>
+</div>
+
+<div class="sec" style="margin-top:8px">
+  <div class="lbl">Abgeschlossen <span id="cDoneCnt" style="color:var(--text2);font-family:'IBM Plex Mono',monospace">0</span></div>
+  <div id="cDoneList"><div class="empty">Noch keine abgeschlossenen Container</div></div>
+</div>
+
+</div><!-- end pageC -->
+
+</div><!-- end #app -->
+
+<!-- ===== OVERLAYS ===== -->
+
+<!-- REPORT MODAL -->
+<div class="overlay" id="repOv">
   <div class="modal">
     <h2>Tagesbericht</h2>
-    <div class="mmeta" id="mMeta"></div>
+    <div class="mmeta" id="repMeta"></div>
     <div id="rc" class="loading">Bericht wird erstellt…</div>
     <div class="mact">
-      <button class="bsec" id="mClose">Schließen</button>
+      <button class="bsec" id="repClose">Schließen</button>
       <button class="bpri" id="cpBtn" disabled>📋 Kopieren</button>
       <button class="bpri" id="txBtn" disabled>⬇ TXT</button>
       <button class="bpri" id="pdBtn" disabled>📄 PDF</button>
@@ -243,558 +324,967 @@
   </div>
 </div>
 
-<!-- CONFIRM / EDIT PANEL -->
-<div id="confirmPanel">
-  <div class="confirm-box">
+<!-- CONFIRM PANEL -->
+<div class="overlay" id="confOv" style="z-index:150">
+  <div class="modal">
     <h3>✏️ Prüfen &amp; bestätigen</h3>
-    <div class="confirm-meta">KI hat den Text korrigiert – bitte prüfen und bei Bedarf anpassen</div>
-    <div class="confirm-orig" id="confirmOrig"><span>Original (Whisper)</span><span id="confirmOrigText"></span></div>
-    <textarea id="confirmTextarea" rows="4"></textarea>
-    <div class="confirm-actions">
-      <button id="confirmSave">✓ Speichern</button>
-      <button id="confirmDiscard">Verwerfen</button>
+    <p style="font-size:.78rem;color:var(--text2);margin-bottom:14px">KI hat den Text korrigiert – bitte prüfen</p>
+    <div class="confirm-orig"><span>Original (Whisper)</span><span id="confOrig"></span></div>
+    <textarea id="confirmTA" rows="4"></textarea>
+    <div class="mact" style="margin-top:10px">
+      <button class="btn-green" style="flex:1" id="confSave">✓ Speichern</button>
+      <button class="bsec" id="confDiscard">Verwerfen</button>
     </div>
   </div>
 </div>
 
 <!-- CONTEXT PANEL -->
-<div id="ctxPanel">
-  <div class="ctx-box">
-    <h2>⚙️ Hintergrundkontext</h2>
-    <p>Hilft Whisper dich besser zu verstehen – Fachbegriffe, Namen, Branche. Wird bei jeder Aufnahme mitgeschickt.</p>
-    <div class="ctx-field">
-      <label>Branche / Tätigkeit</label>
-      <input type="text" id="ctxBranche" placeholder="z.B. Logistik, Produktion, Einzelhandel…">
-    </div>
-    <div class="ctx-field">
-      <label>Mitarbeiternamen</label>
-      <input type="text" id="ctxNamen" placeholder="z.B. Thomas, Maria, Klaus, Özlem…">
-    </div>
-    <div class="ctx-field">
-      <label>Fachbegriffe &amp; typische Wörter</label>
-      <textarea id="ctxBegriffe" rows="3" placeholder="z.B. Lieferschein, Kommissionierung, Schichtplan, Inventur…"></textarea>
-    </div>
-    <div class="ctx-field">
-      <label>Weitere Hinweise (optional)</label>
-      <textarea id="ctxExtra" rows="2" placeholder="z.B. Wir arbeiten im 3-Schicht-Betrieb, Filiale Wien…"></textarea>
-    </div>
-    <button id="ctxSaveBtn">Speichern</button>
-    <button id="ctxCloseBtn">Abbrechen</button>
+<div class="overlay" id="ctxOv" style="z-index:150">
+  <div class="modal">
+    <h3>⚙️ Hintergrundkontext</h3>
+    <p style="font-size:.78rem;color:var(--text2);line-height:1.6;margin-bottom:16px">Hilft Whisper dich besser zu verstehen</p>
+    <div class="fld"><label>Branche / Tätigkeit</label><input type="text" id="ctxBranche" placeholder="z.B. Container, Logistik, Produktion"></div>
+    <div class="fld"><label>Mitarbeiternamen</label><input type="text" id="ctxNamen" placeholder="z.B. Jaworski, György, Sipos"></div>
+    <div class="fld"><label>Fachbegriffe</label><textarea id="ctxBegriffe" rows="3" placeholder="z.B. Containernummer, Panele, Lackierung, CTX…"></textarea></div>
+    <div class="fld"><label>Weitere Hinweise</label><textarea id="ctxExtra" rows="2" placeholder="z.B. Containerhandel, Vermietung, Wohncontainer"></textarea></div>
+    <button id="ctxSave" style="width:100%;padding:13px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(200,169,110,.1);color:var(--accent);font-family:'Playfair Display',serif;font-size:.95rem;cursor:pointer;outline:none;">Speichern</button>
+    <button id="ctxClose" class="btn-cancel" style="width:100%;margin-top:8px">Abbrechen</button>
   </div>
 </div>
 
-</div><!-- end #app -->
+<!-- NEW CONTAINER FORM -->
+<div class="overlay" id="cFormOv" style="z-index:150">
+  <div class="modal">
+    <h3>📦 Container erfassen</h3>
+    <div class="fld">
+      <label>Containernummer *</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="cNum" placeholder="z.B. 123456 oder CTX-987654321" style="flex:1">
+        <button id="qrBtn" type="button" title="QR scannen" style="padding:0 12px;border-radius:7px;border:1.5px solid var(--accent);background:rgba(200,169,110,.1);color:var(--accent);cursor:pointer;outline:none;touch-action:manipulation;flex-shrink:0;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="4" height="4"/></svg>
+        </button>
+        <button id="ocrBtn" type="button" title="Foto abtippen" style="padding:0 12px;border-radius:7px;border:1.5px solid var(--accent);background:rgba(200,169,110,.1);color:var(--accent);cursor:pointer;outline:none;touch-action:manipulation;flex-shrink:0;">📷</button>
+        <input type="file" id="ocrFile" accept="image/*" capture="environment" style="display:none">
+      </div>
+    </div>
+    <div class="fld"><label>Mitarbeiter *</label><input type="text" id="cWorkers" placeholder="z.B. Jaworski, György"></div>
+    <div class="fld"><label>Nötige Arbeiten *</label><textarea id="cTasks" rows="4" placeholder="z.B. Boden austauschen, Tür reparieren…"></textarea></div>
+    <div class="fld"><label>Bemerkung (optional)</label><input type="text" id="cNote" placeholder="z.B. Dringend, Kunde XY…"></div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button id="cFormSave" class="btn-green" style="flex:1">✓ Starten</button>
+      <button id="cFormCancel" class="btn-cancel">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS FORM -->
+<div class="overlay" id="sFormOv" style="z-index:150">
+  <div class="modal">
+    <h3 id="sFormTitle">📊 Statusmeldung</h3>
+    <input type="hidden" id="sCid">
+    <div class="fld"><label>Status / Meldung *</label><textarea id="sTxt" rows="3" placeholder="z.B. Boden fertig. Tür noch offen."></textarea></div>
+    <div class="fld"><label>Neue Aufgaben (optional)</label><textarea id="sNewTasks" rows="2" placeholder="z.B. Fenster muss auch getauscht werden…"></textarea></div>
+    <div class="fld"><label>Aktuelle Mitarbeiter</label><input type="text" id="sWorkers" placeholder="Wer arbeitet gerade daran?"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+      <button id="sSave" style="flex:1;padding:12px;border-radius:8px;border:1.5px solid var(--accent);background:rgba(200,169,110,.1);color:var(--accent);font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;cursor:pointer;outline:none;">Speichern</button>
+      <button id="sDone" class="btn-green" style="flex:1">✓ Fertig melden</button>
+      <button id="sCancel" class="btn-cancel" style="width:100%;margin-top:2px">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<!-- QR SCANNER -->
+<div id="qrOverlay">
+  <div id="qrFrame"><video id="qrVideo" autoplay playsinline muted></video></div>
+  <div class="qr-hint">QR-Code in den Rahmen halten</div>
+  <button class="qr-close" id="qrClose">Abbrechen</button>
+</div>
+
+<!-- OCR OVERLAY -->
+<div id="ocrOverlay">
+  <div class="modal">
+    <h3>📷 Nummer erkennen</h3>
+    <img id="ocrPreview" alt="Vorschau">
+    <div id="ocrStatus" style="font-family:'IBM Plex Mono',monospace;font-size:.78rem;color:var(--accent);text-align:center;padding:10px">⏳ Analysiere…</div>
+    <div id="ocrRes" style="display:none">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:.62rem;color:var(--text2);text-transform:uppercase;letter-spacing:.08em">Erkannte Nummer:</div>
+      <input type="text" id="ocrResultInput">
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button id="ocrConfirm" class="btn-green" style="flex:1">✓ Übernehmen</button>
+        <button id="ocrRetry" class="bsec">Nochmal</button>
+      </div>
+    </div>
+    <button id="ocrCancel" class="btn-cancel" style="width:100%;margin-top:8px">Abbrechen</button>
+  </div>
+</div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-// ── INLINE MANIFEST ───────────────────────────────────────
-const manifestData={name:"Führungsjournal",short_name:"FJ",description:"KI-gestütztes Tagesprotokoll",start_url:".",display:"standalone",background_color:"#0f0f0f",theme_color:"#c8a96e",icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230f0f0f'/%3E%3Ccircle cx='50' cy='50' r='42' fill='%23c8a96e'/%3E%3Ctext x='50' y='64' text-anchor='middle' font-family='serif' font-size='38' font-weight='bold' fill='%230f0f0f'%3EFJ%3C/text%3E%3C/svg%3E",sizes:"192x192",type:"image/svg+xml",purpose:"any maskable"}]};
-const mBlob=new Blob([JSON.stringify(manifestData)],{type:'application/json'});
-document.getElementById('manifestLink').href=URL.createObjectURL(mBlob);
-
-// ── SERVICE WORKER ────────────────────────────────────────
-if('serviceWorker' in navigator){
-  const swCode=`self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',e=>{if(e.request.url.includes('api.openai.com')||e.request.url.includes('api.anthropic.com')||e.request.url.includes('api.groq.com'))return;e.respondWith(caches.open('fj-v2').then(c=>c.match(e.request).then(r=>r||fetch(e.request).then(res=>{c.put(e.request,res.clone());return res;}))));});`;
-  const swBlob=new Blob([swCode],{type:'application/javascript'});
-  navigator.serviceWorker.register(URL.createObjectURL(swBlob),{scope:'./'}).catch(()=>{});
+// ═══════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════
+function today() { return new Date().toISOString().slice(0,10); }
+function nowTime() { return new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}); }
+function $(id) { return document.getElementById(id); }
+function showToast(msg) {
+  var t = $('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2400);
+}
+function calcDur(a, b) {
+  var ms = b - a;
+  var h = Math.floor(ms/3600000);
+  var m = Math.floor((ms%3600000)/60000);
+  return h > 0 ? (h+'h '+m+'min') : (m+'min');
 }
 
-// ── PWA INSTALL ───────────────────────────────────────────
-let deferredPrompt=null;
-window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;document.getElementById('ib').classList.add('show');});
-document.getElementById('ibBtn').addEventListener('click',async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();const{outcome}=await deferredPrompt.userChoice;deferredPrompt=null;document.getElementById('ib').classList.remove('show');if(outcome==='accepted')showToast('App installiert ✓');});
-document.getElementById('ibX').addEventListener('click',()=>document.getElementById('ib').classList.remove('show'));
+// ═══════════════════════════════════════════════════════════
+// PWA
+// ═══════════════════════════════════════════════════════════
+var mBlob = new Blob([JSON.stringify({
+  name:"Führungsjournal",short_name:"FJ",start_url:".",display:"standalone",
+  background_color:"#0f0f0f",theme_color:"#c8a96e",
+  icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%230f0f0f'/%3E%3Ccircle cx='50' cy='50' r='42' fill='%23c8a96e'/%3E%3Ctext x='50' y='64' text-anchor='middle' font-family='serif' font-size='38' font-weight='bold' fill='%230f0f0f'%3EFJ%3C/text%3E%3C/svg%3E",sizes:"192x192",type:"image/svg+xml",purpose:"any maskable"}]
+})],{type:'application/json'});
+$('manifestLink').href = URL.createObjectURL(mBlob);
 
-// ── API KEY MANAGEMENT ────────────────────────────────────
-let openaiKey = '';
+if ('serviceWorker' in navigator) {
+  var swCode = "self.addEventListener('install',function(e){self.skipWaiting();});self.addEventListener('activate',function(e){self.clients.claim();});self.addEventListener('fetch',function(e){if(e.request.url.indexOf('api.groq.com')>-1||e.request.url.indexOf('api.openai.com')>-1||e.request.url.indexOf('api.anthropic.com')>-1)return;e.respondWith(caches.open('fj-v3').then(function(c){return c.match(e.request).then(function(r){return r||fetch(e.request).then(function(res){c.put(e.request,res.clone());return res;});});}));});";
+  navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode],{type:'application/javascript'})),{scope:'./'}).catch(function(){});
+}
+
+var deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e){
+  e.preventDefault(); deferredPrompt = e;
+  $('ib').classList.add('show');
+});
+$('ibBtn').addEventListener('click', function(){
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function(r){
+    deferredPrompt = null;
+    $('ib').classList.remove('show');
+    if (r.outcome==='accepted') showToast('App installiert ✓');
+  });
+});
+$('ibX').addEventListener('click', function(){ $('ib').classList.remove('show'); });
+
+// ═══════════════════════════════════════════════════════════
+// API KEY
+// ═══════════════════════════════════════════════════════════
+var openaiKey = '';
 
 function initApp() {
-  const saved = localStorage.getItem('fj_oai_key');
-  if (saved) {
-    openaiKey = saved;
-    document.getElementById('apiSetup').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    initMainApp();
-  }
+  var saved = localStorage.getItem('fj_oai_key');
+  if (saved) { openaiKey = saved; showApp(); }
 }
 
-document.getElementById('saveKeyBtn').addEventListener('click', () => {
-  // Clean key: remove whitespace, newlines, invisible chars
-  const raw = document.getElementById('apiKeyInput').value;
-  const key = raw.replace(/[\s\u200B\uFEFF]/g, '');
-  if (key.length < 10) { showToast('Key zu kurz – bitte vollständig einfügen'); return; }
-  if (!key.startsWith('sk-') && !key.startsWith('gsk_')) {
-    showToast('Key beginnt mit: "' + key.slice(0,6) + '..." – erwartet sk- oder gsk_');
+$('saveKeyBtn').addEventListener('click', function(){
+  var raw = $('apiKeyInput').value;
+  var key = raw.replace(/[\s\u200B\uFEFF]/g, '');
+  if (key.length < 10) { showToast('Key zu kurz'); return; }
+  if (key.indexOf('sk-') !== 0 && key.indexOf('gsk_') !== 0) {
+    showToast('Beginnt mit: "' + key.slice(0,6) + '..." – erwartet gsk_ oder sk-');
     return;
   }
   openaiKey = key;
   localStorage.setItem('fj_oai_key', key);
-  document.getElementById('apiSetup').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
-  initMainApp();
+  showApp();
   showToast('Key gespeichert ✓');
 });
 
+function showApp() {
+  $('apiSetup').style.display = 'none';
+  $('app').style.display = 'block';
+  $('hDate').innerHTML = new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).replace(',','<br>');
+  loadCtx();
+  render();
+  renderContainers();
+  initFirebase();
+}
+
 function resetKey() {
-  if (!confirm('API Key löschen und neu eingeben?')) return;
+  if (!confirm('API Key löschen?')) return;
   localStorage.removeItem('fj_oai_key');
   openaiKey = '';
-  document.getElementById('apiKeyInput').value = '';
-  document.getElementById('apiSetup').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
+  $('apiKeyInput').value = '';
+  $('apiSetup').style.display = 'flex';
+  $('app').style.display = 'none';
 }
 
-// ── MAIN APP ──────────────────────────────────────────────
-function initMainApp() {
-  loadCtx();
-  document.getElementById('hDate').innerHTML =
-    new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).replace(',','<br>');
-  render();
+// ═══════════════════════════════════════════════════════════
+// PAGE NAV
+// ═══════════════════════════════════════════════════════════
+function switchPage(p) {
+  $('pageJ').classList.toggle('on', p==='j');
+  $('pageC').classList.toggle('on', p==='c');
+  $('tabJ').classList.toggle('on', p==='j');
+  $('tabC').classList.toggle('on', p==='c');
+  if (p==='c') renderContainers();
 }
 
-// ── STATE ─────────────────────────────────────────────────
-const today=()=>new Date().toISOString().slice(0,10);
-const nowTime=()=>new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
-let entries=[];
-try{entries=JSON.parse(localStorage.getItem('fj_'+today())||'[]');}catch(e){}
-let selCat='Allgemein', report='';
-
-// ── CATEGORY ──────────────────────────────────────────────
-document.getElementById('catRow').addEventListener('click',e=>{
-  if(!e.target.classList.contains('cat'))return;
-  document.querySelectorAll('.cat').forEach(b=>b.classList.remove('on'));
-  e.target.classList.add('on'); selCat=e.target.dataset.cat;
-});
-
-// ── MODE ──────────────────────────────────────────────────
-document.getElementById('mSp').addEventListener('click',()=>setMode('sp'));
-document.getElementById('mTx').addEventListener('click',()=>setMode('tx'));
-function setMode(m){
-  document.getElementById('mSp').classList.toggle('on',m==='sp');
-  document.getElementById('mTx').classList.toggle('on',m==='tx');
-  document.getElementById('spArea').style.display=m==='sp'?'flex':'none';
-  document.getElementById('txArea').style.display=m==='tx'?'block':'none';
-}
-
-// ── WHISPER RECORDING ─────────────────────────────────────
-let mediaRecorder=null, audioChunks=[], isRecording=false, timerInterval=null, recSeconds=0;
-
-const recBtn = document.getElementById('recBtn');
-
-// Touch events for hold-to-record
-recBtn.addEventListener('touchstart', e=>{ e.preventDefault(); startRec(); }, {passive:false});
-recBtn.addEventListener('touchend', e=>{ e.preventDefault(); stopRec(); }, {passive:false});
-recBtn.addEventListener('touchcancel', e=>{ e.preventDefault(); stopRec(); }, {passive:false});
-// Click fallback for desktop
-recBtn.addEventListener('click', ()=>{ if(!isRecording) startRec(); else stopRec(); });
-
-async function startRec() {
-  if (isRecording) return;
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
-    audioChunks = [];
-    mediaRecorder = new MediaRecorder(stream, {mimeType: getSupportedMime()});
-    mediaRecorder.ondataavailable = e => { if(e.data.size>0) audioChunks.push(e.data); };
-    mediaRecorder.start(100);
-    isRecording = true;
-
-    recBtn.classList.add('rec');
-    document.getElementById('recLabel').textContent = 'Loslassen';
-    document.getElementById('micIco').setAttribute('stroke','var(--red)');
-    document.getElementById('recSt').textContent = 'Aufnahme läuft…';
-    document.getElementById('recSt').className = 'on';
-    document.getElementById('live').textContent = 'Sprich jetzt…';
-    document.getElementById('live').className = 'on';
-    document.getElementById('recTimer').classList.add('on');
-
-    recSeconds = 0;
-    updateTimer();
-    timerInterval = setInterval(updateTimer, 1000);
-  } catch(err) {
-    showToast('Mikrofon-Fehler: ' + err.message);
-  }
-}
-
-function getSupportedMime() {
-  const types = ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg'];
-  for (const t of types) { if (MediaRecorder.isTypeSupported(t)) return t; }
-  return '';
-}
-
-function updateTimer() {
-  recSeconds++;
-  const m = String(Math.floor(recSeconds/60)).padStart(2,'0');
-  const s = String(recSeconds%60).padStart(2,'0');
-  document.getElementById('recTimer').textContent = m+':'+s;
-}
-
-async function stopRec() {
-  if (!isRecording || !mediaRecorder) return;
-  isRecording = false;
-  clearInterval(timerInterval);
-  document.getElementById('recTimer').classList.remove('on');
-
-  recBtn.classList.remove('rec');
-  recBtn.classList.add('processing');
-  document.getElementById('recLabel').textContent = '…';
-  document.getElementById('micIco').setAttribute('stroke','var(--accent2)');
-  document.getElementById('recSt').textContent = 'Whisper transkribiert…';
-  document.getElementById('recSt').className = 'proc';
-  document.getElementById('live').textContent = '⏳ KI erkennt Sprache…';
-  document.getElementById('live').className = 'proc';
-
-  mediaRecorder.stop();
-  mediaRecorder.stream.getTracks().forEach(t=>t.stop());
-
-  // Wait for data
-  await new Promise(res => mediaRecorder.onstop = res);
-
-  const mime = getSupportedMime() || 'audio/webm';
-  const ext = mime.includes('mp4') ? 'mp4' : mime.includes('ogg') ? 'ogg' : 'webm';
-  const blob = new Blob(audioChunks, {type: mime});
-
-  if (blob.size < 1000) {
-    resetRecBtn();
-    document.getElementById('live').textContent = 'Zu kurz – bitte nochmal versuchen.';
-    document.getElementById('live').className = '';
-    return;
-  }
-
-  try {
-    const formData = new FormData();
-    formData.append('file', blob, `audio.${ext}`);
-    formData.append('model', 'whisper-1');
-    formData.append('language', 'de');
-    formData.append('prompt', getWhisperPrompt());
-
-    const isGroq = openaiKey.startsWith('gsk_');
-    const apiUrl = isGroq ? 'https://api.groq.com/openai/v1/audio/transcriptions' : 'https://api.openai.com/v1/audio/transcriptions';
-    const modelName = isGroq ? 'whisper-large-v3' : 'whisper-1';
-    formData.set('model', modelName);
-    const res = await fetch(apiUrl, {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + openaiKey },
-      body: formData
-    });
-
-    if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error?.message || res.statusText);
-    }
-
-    const data = await res.json();
-    const text = data.text?.trim();
-
-    if (text && text.length > 2) {
-      // Step 2: KI correction
-      document.getElementById('recSt').textContent = 'KI korrigiert…';
-      document.getElementById('live').textContent = '⏳ Satz wird verbessert…';
-      const corrected = await correctWithAI(text);
-      resetRecBtn();
-      document.getElementById('live').textContent = 'Sprich deine Bemerkung… Whisper erkennt alles.';
-      document.getElementById('live').className = '';
-      showConfirmPanel(text, corrected, selCat);
-    } else {
-      document.getElementById('live').textContent = 'Nichts erkannt – bitte nochmal.';
-      document.getElementById('live').className = '';
-    }
-  } catch(err) {
-    document.getElementById('live').textContent = 'Fehler: ' + err.message;
-    document.getElementById('live').className = '';
-    if (err.message.includes('401')) showToast('API Key ungültig – bitte prüfen');
-  }
-
-  resetRecBtn();
-}
-
-function resetRecBtn() {
-  recBtn.classList.remove('rec','processing');
-  document.getElementById('recLabel').textContent = 'Halten';
-  document.getElementById('micIco').setAttribute('stroke','var(--accent)');
-  document.getElementById('recSt').textContent = 'Antippen & halten zum Sprechen';
-  document.getElementById('recSt').className = '';
-  audioChunks = [];
-  mediaRecorder = null;
-}
-
-// ── MANUAL INPUT ──────────────────────────────────────────
-document.getElementById('msBtn').addEventListener('click',()=>{
-  const t=document.getElementById('mi').value.trim();
-  if(t.length>2){saveEntry(t,selCat);document.getElementById('mi').value='';showToast('Notiz gespeichert');}
-});
-document.getElementById('mi').addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))document.getElementById('msBtn').click();
-});
-
-// ── ENTRIES ───────────────────────────────────────────────
-function saveEntry(text,cat){
-  entries.push({id:Date.now(),time:nowTime(),cat,text});
-  try{localStorage.setItem('fj_'+today(),JSON.stringify(entries));}catch(e){}
-  render();
-}
-function delEntry(id){
-  entries=entries.filter(e=>e.id!==id);
-  try{localStorage.setItem('fj_'+today(),JSON.stringify(entries));}catch(e){}
-  render();
-}
-// ── WORKER COLOR SYSTEM ───────────────────────────────────
-const WORKER_COLORS = [
-  '#e07b5a','#5a9fe0','#5ac87a','#c8a96e',
-  '#9b5ae0','#e0c45a','#5ae0d4','#e05a8a',
-  '#7ae05a','#5a6de0'
-];
-const workerColorMap = {};
-let colorIndex = 0;
-
-function getWorkerColor(name) {
-  const key = name.toLowerCase().trim();
-  if (!workerColorMap[key]) {
-    workerColorMap[key] = WORKER_COLORS[colorIndex % WORKER_COLORS.length];
-    colorIndex++;
-  }
-  return workerColorMap[key];
-}
-
-function detectWorkers(text) {
-  // Get known names from context
-  try {
-    const ctx = JSON.parse(localStorage.getItem('fj_ctx') || '{}');
-    const namen = (ctx.namen || '').split(/[,;\s]+/).map(n=>n.trim()).filter(n=>n.length>2);
-    const found = [];
-    namen.forEach(name => {
-      if (text.toLowerCase().includes(name.toLowerCase())) {
-        found.push(name);
-      }
-    });
-    return found;
-  } catch(e) { return []; }
-}
-
-function getDotsHtml(text) {
-  const workers = detectWorkers(text);
-  if (workers.length === 0) return '<div class="dot" style="background:transparent"></div>';
-  // max 4 dots (2x2)
-  const shown = workers.slice(0, 4);
-  // pad to even number for 2x2 grid
-  while (shown.length < 2) shown.push(null);
-  return shown.map(w => w
-    ? `<div class="dot" style="background:${getWorkerColor(w)}" title="${w}"></div>`
-    : `<div class="dot" style="background:transparent"></div>`
-  ).join('');
-}
-
-function render(){
-  const l=document.getElementById('eList');
-  document.getElementById('eCnt').textContent=entries.length;
-  document.getElementById('genBtn').disabled=!entries.length;
-  if(!entries.length){l.innerHTML='<div class="empty">Noch keine Einträge heute</div>';return;}
-  l.innerHTML=entries.slice().reverse().map(e=>`
-    <div class="ec">
-      <div class="et">${e.time}</div>
-      <div class="dots">${getDotsHtml(e.text)}</div>
-      <div class="eb"><div class="ecat">${e.cat}</div><div class="etxt">${e.text}</div></div>
-      <button class="edel" onclick="delEntry(${e.id})">×</button>
-    </div>`).join('');
-}
-
-// ── GENERATE REPORT ───────────────────────────────────────
-document.getElementById('genBtn').addEventListener('click',async()=>{
-  document.getElementById('mOv').classList.add('open');
-  document.getElementById('rc').className='loading';
-  document.getElementById('rc').textContent='Bericht wird erstellt…';
-  document.getElementById('mMeta').textContent=
-    new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})+' · '+entries.length+' Einträge';
-  ['cpBtn','txBtn','pdBtn'].forEach(id=>document.getElementById(id).disabled=true);
-
-  // Group entries by category
-  const cats = {};
-  entries.forEach(e => {
-    if (!cats[e.cat]) cats[e.cat] = [];
-    cats[e.cat].push(`[${e.time}] ${e.text}`);
-  });
-  const txt = Object.entries(cats).map(([cat, lines]) => `=== ${cat} ===\n${lines.join('\n')}`).join('\n\n');
-
-  const prompt=`Du bist ein Schreibassistent für Führungskräfte.
-
-DEINE AUFGABE: Forme die Notizen in einen sachlichen Tagesbericht in der Ich-Form um.
-
-STIL:
-- Kurze, direkte Sätze – wie ein Protokoll
-- Ich-Form: "Ich habe...", "Ich entscheide...", "Ich war..."
-- KEINE Floskeln, KEIN Schnickschnack – nur Fakten
-- KEINE Formulierungen wie "Ich habe bemerkt dass", "Es fiel mir auf" – direkt zur Sache
-- Jeder Satz beginnt mit dem Zeitstempel in eckigen Klammern: [HH:MM]
-- Beispiel gut: "[08:15] Jaworski hat mit dem Streichen des Containers begonnen."
-- Beispiel gut: "[09:30] Ich habe entschieden, die Lieferung auf Montag zu verschieben."
-- Beispiel gut: "[11:45] Jaworski fertig mit Container. Arbeit zu 50% abgeschlossen."
-- So kann man den zeitlichen Ablauf und das Tempo der Mitarbeiter nachvollziehen.
-
-STRENGE REGELN:
-- Verwende AUSSCHLIESSLICH Informationen aus den Notizen
-- Erfinde NICHTS – keine Annahmen, keine Ergänzungen
-- Lasse KEINEN Inhaltspunkt weg – jede Notiz muss mit Zeitstempel im Bericht vorkommen
-- Behalte die originalen Zeitstempel aus den Notizen – erfinde keine neuen
-- Kürze NICHTS inhaltlich – nur sprachlich glätten
-- Wenn zu einer Kategorie keine Notizen vorhanden sind, schreibe NICHTS dazu
-- Erstelle NUR Abschnitte für Kategorien mit Notizen
-- Beginne jeden Abschnitt mit einer fett markierten Überschrift (die Kategorie)
-
-Notizen vom heutigen Tag:
-${txt}`;
-
-  try{
-    const res=await fetch("https://api.groq.com/openai/v1/chat/completions",{
-      method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+openaiKey},
-      body:JSON.stringify({model:"llama-3.3-70b-versatile",max_tokens:1000,messages:[{role:"system",content:"Du bist ein professioneller Assistent für Führungskräfte. Antworte immer auf Deutsch."},{role:"user",content:prompt}]})
-    });
-    const data=await res.json();
-    report=data.choices?.[0]?.message?.content||'Kein Ergebnis.';
-    document.getElementById('rc').className='';
-    document.getElementById('rc').textContent=report;
-    ['cpBtn','txBtn','pdBtn'].forEach(id=>document.getElementById(id).disabled=false);
-  }catch(err){
-    document.getElementById('rc').className='';
-    document.getElementById('rc').textContent='Fehler: '+err.message;
-  }
-});
-
-// ── MODAL ACTIONS ─────────────────────────────────────────
-document.getElementById('mClose').addEventListener('click',()=>document.getElementById('mOv').classList.remove('open'));
-document.getElementById('cpBtn').addEventListener('click',()=>navigator.clipboard.writeText(report).then(()=>showToast('Kopiert!')).catch(()=>showToast('Fehler')));
-document.getElementById('txBtn').addEventListener('click',()=>{
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([report],{type:'text/plain;charset=utf-8'}));
-  a.download=`Tagesbericht_${today()}.txt`;a.click();showToast('TXT heruntergeladen');
-});
-document.getElementById('pdBtn').addEventListener('click',()=>{
-  const ds=new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
-  const rows=entries.map(e=>`<tr><td style="color:#888;font-family:monospace;font-size:11px;padding:4px 8px 4px 0;white-space:nowrap">${e.time}</td><td style="color:#b07830;font-family:monospace;font-size:10px;padding:4px 8px 4px 0">${e.cat}</td><td style="font-size:13px;padding:4px 0">${e.text}</td></tr>`).join('');
-  const body=report.split('\n').map(l=>l.startsWith('##')?`<h3 style="margin:16px 0 6px;font-size:14px;color:#333">${l.replace(/^#+\s*/,'')}</h3>`:l.startsWith('#')?`<h2 style="margin:20px 0 8px;font-size:16px;color:#111">${l.replace(/^#+\s*/,'')}</h2>`:l.trim()===''?'<br>':`<p style="margin:0 0 6px;font-size:13px;line-height:1.7">${l}</p>`).join('');
-  const w=window.open('','_blank');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Tagesbericht</title><style>body{font-family:'Segoe UI',Arial,sans-serif;padding:36px;max-width:700px;margin:0 auto;color:#222}h1{font-size:20px;margin-bottom:4px}.meta{color:#888;font-size:12px;margin-bottom:22px;font-family:monospace}hr{border:none;border-top:1px solid #ddd;margin:18px 0}table{width:100%;border-collapse:collapse}@media print{body{padding:20px}}</style></head><body><h1>Führungsjournal – Tagesbericht</h1><div class="meta">${ds} · ${entries.length} Einträge</div><hr>${body}<hr><p style="font-family:monospace;font-size:11px;color:#999;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Rohe Notizen</p><table>${rows}</table><script>window.onload=()=>window.print()<\/script></body></html>`);
-  w.document.close();showToast('PDF-Druck geöffnet');
-});
-
-// ── CONTEXT ───────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// CONTEXT
+// ═══════════════════════════════════════════════════════════
 function loadCtx() {
   try {
-    const c = JSON.parse(localStorage.getItem('fj_ctx') || '{}');
-    document.getElementById('ctxBranche').value = c.branche || '';
-    document.getElementById('ctxNamen').value = c.namen || '';
-    document.getElementById('ctxBegriffe').value = c.begriffe || '';
-    document.getElementById('ctxExtra').value = c.extra || '';
-    updateCtxIndicator(c);
-  } catch(e) {}
+    var c = JSON.parse(localStorage.getItem('fj_ctx')||'{}');
+    $('ctxBranche').value = c.branche||'';
+    $('ctxNamen').value = c.namen||'';
+    $('ctxBegriffe').value = c.begriffe||'';
+    $('ctxExtra').value = c.extra||'';
+    var has = c.branche||c.namen||c.begriffe;
+    $('ctxIndicator').textContent = has ? '⚙️ Kontext ✓' : '⚙️ Kontext';
+    $('ctxIndicator').style.color = has ? 'var(--green)' : 'var(--accent)';
+  } catch(e){}
 }
-function updateCtxIndicator(c) {
-  const hasCtx = c && (c.branche || c.namen || c.begriffe);
-  document.getElementById('ctxIndicator').textContent = hasCtx ? '⚙️ Kontext ✓' : '⚙️ Kontext';
-  document.getElementById('ctxIndicator').style.color = hasCtx ? 'var(--green)' : 'var(--text2)';
-}
-function openCtx() {
+function openCtx() { loadCtx(); $('ctxOv').classList.add('open'); }
+$('ctxSave').addEventListener('click', function(){
+  var c = {branche:$('ctxBranche').value.trim(),namen:$('ctxNamen').value.trim(),begriffe:$('ctxBegriffe').value.trim(),extra:$('ctxExtra').value.trim()};
+  localStorage.setItem('fj_ctx', JSON.stringify(c));
   loadCtx();
-  document.getElementById('ctxPanel').classList.add('open');
-}
+  $('ctxOv').classList.remove('open');
+  showToast('Kontext gespeichert ✓');
+});
+$('ctxClose').addEventListener('click', function(){ $('ctxOv').classList.remove('open'); });
+
 function getWhisperPrompt() {
   try {
-    const c = JSON.parse(localStorage.getItem('fj_ctx') || '{}');
-    const parts = ['Führungskraft, berufliche Notizen'];
+    var c = JSON.parse(localStorage.getItem('fj_ctx')||'{}');
+    var parts = ['Führungskraft, berufliche Notizen, Container'];
     if (c.branche) parts.push(c.branche);
     if (c.namen) parts.push(c.namen);
     if (c.begriffe) parts.push(c.begriffe);
     if (c.extra) parts.push(c.extra);
-    const result = parts.join(', ');
-    return result.slice(0, 880); // Whisper limit: max 896 chars
+    return parts.join(', ').slice(0, 880);
   } catch(e) { return 'Führungskraft, berufliche Notizen'; }
 }
-document.getElementById('ctxSaveBtn').addEventListener('click', () => {
-  const c = {
-    branche: document.getElementById('ctxBranche').value.trim(),
-    namen: document.getElementById('ctxNamen').value.trim(),
-    begriffe: document.getElementById('ctxBegriffe').value.trim(),
-    extra: document.getElementById('ctxExtra').value.trim()
-  };
-  localStorage.setItem('fj_ctx', JSON.stringify(c));
-  updateCtxIndicator(c);
-  document.getElementById('ctxPanel').classList.remove('open');
-  showToast('Kontext gespeichert ✓');
-});
-document.getElementById('ctxCloseBtn').addEventListener('click', () => {
-  document.getElementById('ctxPanel').classList.remove('open');
+
+// ═══════════════════════════════════════════════════════════
+// CATEGORIES
+// ═══════════════════════════════════════════════════════════
+var selCat = 'Allgemein';
+$('catRow').addEventListener('click', function(e){
+  if (!e.target.classList.contains('cat')) return;
+  document.querySelectorAll('.cat').forEach(function(b){ b.classList.remove('on'); });
+  e.target.classList.add('on');
+  selCat = e.target.dataset.cat;
 });
 
-// ── AI CORRECTION ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// INPUT MODE
+// ═══════════════════════════════════════════════════════════
+$('mSp').addEventListener('click', function(){ setMode('sp'); });
+$('mTx').addEventListener('click', function(){ setMode('tx'); });
+function setMode(m) {
+  $('mSp').classList.toggle('on', m==='sp');
+  $('mTx').classList.toggle('on', m==='tx');
+  $('spArea').style.display = m==='sp'?'flex':'none';
+  $('txArea').style.display = m==='tx'?'block':'none';
+  if (isRec) stopRec();
+}
+
+// ═══════════════════════════════════════════════════════════
+// WHISPER RECORDING
+// ═══════════════════════════════════════════════════════════
+var mediaRecorder=null, audioChunks=[], isRec=false, timerInt=null, recSecs=0;
+
+$('recBtn').addEventListener('touchstart', function(e){ e.preventDefault(); startRec(); }, {passive:false});
+$('recBtn').addEventListener('touchend', function(e){ e.preventDefault(); stopRec(); }, {passive:false});
+$('recBtn').addEventListener('touchcancel', function(e){ e.preventDefault(); stopRec(); }, {passive:false});
+$('recBtn').addEventListener('click', function(){ if(!isRec) startRec(); else stopRec(); });
+
+function getSupportedMime() {
+  var types = ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg'];
+  for (var i=0; i<types.length; i++) {
+    if (MediaRecorder.isTypeSupported(types[i])) return types[i];
+  }
+  return '';
+}
+
+async function startRec() {
+  if (isRec) return;
+  try {
+    var stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    audioChunks = [];
+    var mime = getSupportedMime();
+    mediaRecorder = new MediaRecorder(stream, mime ? {mimeType:mime} : {});
+    mediaRecorder.ondataavailable = function(e){ if(e.data.size>0) audioChunks.push(e.data); };
+    mediaRecorder.start(100);
+    isRec = true;
+    $('recBtn').classList.add('rec');
+    $('recLabel').textContent = 'Loslassen';
+    $('micIco').setAttribute('stroke','var(--red)');
+    $('recSt').textContent = 'Aufnahme läuft…';
+    $('recSt').className = 'on';
+    $('live').textContent = 'Sprich jetzt…';
+    $('live').className = 'on';
+    $('recTimer').classList.add('on');
+    recSecs = 0; updateTimer();
+    timerInt = setInterval(updateTimer, 1000);
+  } catch(err) {
+    setMode('tx');
+    showToast('Mikrofon: ' + err.message);
+  }
+}
+
+function updateTimer() {
+  recSecs++;
+  var m = String(Math.floor(recSecs/60)).padStart(2,'0');
+  var s = String(recSecs%60).padStart(2,'0');
+  $('recTimer').textContent = m+':'+s;
+}
+
+async function stopRec() {
+  if (!isRec || !mediaRecorder) return;
+  isRec = false;
+  clearInterval(timerInt);
+  $('recTimer').classList.remove('on');
+  $('recBtn').classList.remove('rec');
+  $('recBtn').classList.add('proc');
+  $('recLabel').textContent = '…';
+  $('micIco').setAttribute('stroke','var(--accent2)');
+  $('recSt').textContent = 'Whisper transkribiert…';
+  $('recSt').className = 'proc';
+  $('live').textContent = '⏳ KI erkennt Sprache…';
+  $('live').className = 'proc';
+
+  mediaRecorder.stop();
+  mediaRecorder.stream.getTracks().forEach(function(t){ t.stop(); });
+  await new Promise(function(res){ mediaRecorder.onstop = res; });
+
+  var mime = getSupportedMime() || 'audio/webm';
+  var ext = mime.indexOf('mp4')>-1 ? 'mp4' : mime.indexOf('ogg')>-1 ? 'ogg' : 'webm';
+  var blob = new Blob(audioChunks, {type:mime});
+
+  if (blob.size < 1000) {
+    resetRecBtn();
+    $('live').textContent = 'Zu kurz – bitte nochmal.';
+    $('live').className = '';
+    return;
+  }
+
+  try {
+    var formData = new FormData();
+    formData.append('file', blob, 'audio.' + ext);
+    formData.append('language', 'de');
+    formData.append('prompt', getWhisperPrompt());
+    var isGroq = openaiKey.indexOf('gsk_') === 0;
+    var apiUrl = isGroq ? 'https://api.groq.com/openai/v1/audio/transcriptions' : 'https://api.openai.com/v1/audio/transcriptions';
+    formData.append('model', isGroq ? 'whisper-large-v3' : 'whisper-1');
+
+    var res = await fetch(apiUrl, {method:'POST', headers:{'Authorization':'Bearer '+openaiKey}, body:formData});
+    if (!res.ok) { var err = await res.json(); throw new Error(err.error ? err.error.message : res.statusText); }
+    var data = await res.json();
+    var text = data.text ? data.text.trim() : '';
+
+    if (text && text.length > 2) {
+      $('recSt').textContent = 'KI korrigiert…';
+      $('live').textContent = '⏳ Satz wird verbessert…';
+      var corrected = await correctWithAI(text);
+      resetRecBtn();
+      $('live').textContent = 'Sprich deine Bemerkung…';
+      $('live').className = '';
+      showConfirmPanel(text, corrected, selCat);
+    } else {
+      $('live').textContent = 'Nichts erkannt – bitte nochmal.';
+      $('live').className = '';
+      resetRecBtn();
+    }
+  } catch(err) {
+    $('live').textContent = 'Fehler: ' + err.message;
+    $('live').className = '';
+    if (err.message.indexOf('401') > -1) showToast('API Key ungültig');
+    resetRecBtn();
+  }
+}
+
+function resetRecBtn() {
+  $('recBtn').classList.remove('rec','proc');
+  $('recLabel').textContent = 'Halten';
+  $('micIco').setAttribute('stroke','var(--accent)');
+  $('recSt').textContent = 'Antippen & halten zum Sprechen';
+  $('recSt').className = '';
+  audioChunks = [];
+  mediaRecorder = null;
+}
+
+// ═══════════════════════════════════════════════════════════
+// AI CORRECTION
+// ═══════════════════════════════════════════════════════════
 async function correctWithAI(rawText) {
   try {
-    const ctx = (() => { try { return JSON.parse(localStorage.getItem('fj_ctx')||'{}'); } catch(e){return{};} })();
-    const ctxHint = [ctx.branche, ctx.namen, ctx.begriffe, ctx.extra].filter(Boolean).join(', ');
-    const sysPrompt = `Du bist ein minimaler Korrektur-Assistent für gesprochene Notizen.
-Kontext: ${ctxHint || 'berufliche Führungsnotizen'}
-
-DEINE AUFGABE: Nur minimale Korrekturen – so wenig wie möglich ändern.
-
-STRENGE REGELN:
-- Korrigiere NUR eindeutige Spracherkennungsfehler (z.B. falsches Wort das keinen Sinn ergibt)
-- Ersetze falsch gehörte Namen/Fachbegriffe NUR wenn du dir 100% sicher bist
-- Vervollständige abgebrochene Sätze NUR mit einem Punkt oder Komma – füge KEINE neuen Wörter hinzu
-- Ändere NIEMALS den Sinn oder die Aussage
-- Ändere KEINE Wörter die inhaltlich Sinn ergeben, auch wenn sie grammatikalisch unvollständig sind
-- Wenn du unsicher bist: Text UNVERÄNDERT lassen
-- Antworte NUR mit dem (minimal) korrigierten Text, ohne Erklärungen oder Kommentare`;
-
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {"Content-Type":"application/json","Authorization":"Bearer "+openaiKey},
-      body: JSON.stringify({
-        model: "llama-3.3-70b-versatile",
-        max_tokens: 300,
-        messages: [
-          {role:"system", content: sysPrompt},
-          {role:"user", content: rawText}
-        ]
-      })
+    var ctx = {};
+    try { ctx = JSON.parse(localStorage.getItem('fj_ctx')||'{}'); } catch(e){}
+    var ctxHint = [ctx.branche,ctx.namen,ctx.begriffe,ctx.extra].filter(Boolean).join(', ');
+    var sysPrompt = 'Du bist ein minimaler Korrektur-Assistent. Kontext: ' + (ctxHint||'berufliche Notizen') + '. REGELN: Korrigiere NUR eindeutige Erkennungsfehler. Vervollständige abgebrochene Sätze NUR mit Punkt/Komma. Ändere NIEMALS den Sinn. Bei Unsicherheit: Text unverändert lassen. Antworte NUR mit dem korrigierten Text.';
+    var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+openaiKey},
+      body: JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:300,messages:[{role:'system',content:sysPrompt},{role:'user',content:rawText}]})
     });
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content?.trim() || rawText;
-  } catch(e) {
-    return rawText; // fallback to original if AI fails
-  }
+    var data = await res.json();
+    return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) ? data.choices[0].message.content.trim() : rawText;
+  } catch(e) { return rawText; }
 }
 
-// ── CONFIRM PANEL ─────────────────────────────────────────
-let pendingCat = '';
-function showConfirmPanel(original, corrected, cat) {
+// ═══════════════════════════════════════════════════════════
+// CONFIRM PANEL
+// ═══════════════════════════════════════════════════════════
+var pendingCat = '';
+function showConfirmPanel(orig, corrected, cat) {
   pendingCat = cat;
-  document.getElementById('confirmOrigText').textContent = original;
-  document.getElementById('confirmTextarea').value = corrected;
-  document.getElementById('confirmPanel').classList.add('open');
-  // Auto-resize textarea
-  const ta = document.getElementById('confirmTextarea');
-  ta.style.height = 'auto';
-  ta.style.height = ta.scrollHeight + 'px';
+  $('confOrig').textContent = orig;
+  $('confirmTA').value = corrected;
+  $('confOv').classList.add('open');
 }
-document.getElementById('confirmSave').addEventListener('click', () => {
-  const text = document.getElementById('confirmTextarea').value.trim();
-  if (text.length > 2) {
-    saveEntry(text, pendingCat);
-    showToast('Notiz gespeichert ✓');
-  }
-  document.getElementById('confirmPanel').classList.remove('open');
+$('confSave').addEventListener('click', function(){
+  var text = $('confirmTA').value.trim();
+  if (text.length > 2) { saveEntry(text, pendingCat); showToast('Notiz gespeichert ✓'); }
+  $('confOv').classList.remove('open');
 });
-document.getElementById('confirmDiscard').addEventListener('click', () => {
-  document.getElementById('confirmPanel').classList.remove('open');
+$('confDiscard').addEventListener('click', function(){
+  $('confOv').classList.remove('open');
   showToast('Verworfen');
 });
 
-function showToast(msg){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2600);
+// ═══════════════════════════════════════════════════════════
+// MANUAL INPUT
+// ═══════════════════════════════════════════════════════════
+$('msBtn').addEventListener('click', function(){
+  var text = $('mi').value.trim();
+  if (text.length > 2) { saveEntry(text, selCat); $('mi').value = ''; showToast('Notiz gespeichert ✓'); }
+});
+$('mi').addEventListener('keydown', function(e){
+  if (e.key==='Enter' && (e.ctrlKey||e.metaKey)) $('msBtn').click();
+});
+
+// ═══════════════════════════════════════════════════════════
+// WORKER COLORS
+// ═══════════════════════════════════════════════════════════
+var COLORS = ['#e07b5a','#5a9fe0','#5ac87a','#c8a96e','#9b5ae0','#e0c45a','#5ae0d4','#e05a8a','#7ae05a','#5a6de0'];
+var colorMap = {};
+var colorIdx = 0;
+function getColor(name) {
+  var k = name.toLowerCase().trim();
+  if (!colorMap[k]) { colorMap[k] = COLORS[colorIdx % COLORS.length]; colorIdx++; }
+  return colorMap[k];
+}
+function detectWorkers(text) {
+  try {
+    var ctx = JSON.parse(localStorage.getItem('fj_ctx')||'{}');
+    var namen = (ctx.namen||'').split(/[,;\s]+/).map(function(n){ return n.trim(); }).filter(function(n){ return n.length>2; });
+    return namen.filter(function(name){ return text.toLowerCase().indexOf(name.toLowerCase())>-1; });
+  } catch(e) { return []; }
+}
+function getDotsHtml(text) {
+  var workers = detectWorkers(text);
+  if (!workers.length) return '<div class="dot" style="background:transparent"></div><div class="dot" style="background:transparent"></div><div class="dot" style="background:transparent"></div><div class="dot" style="background:transparent"></div>';
+  var shown = workers.slice(0,4);
+  while (shown.length < 4) shown.push(null);
+  return shown.map(function(w){ return w ? '<div class="dot" style="background:'+getColor(w)+'" title="'+w+'"></div>' : '<div class="dot" style="background:transparent"></div>'; }).join('');
 }
 
-// ── START ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// ENTRIES
+// ═══════════════════════════════════════════════════════════
+var entries = [];
+try { entries = JSON.parse(localStorage.getItem('fj_'+today())||'[]'); } catch(e){}
+
+function saveEntry(text, cat) {
+  var entry = {id:Date.now(), time:nowTime(), cat:cat, text:text};
+  entries.push(entry);
+  try { localStorage.setItem('fj_'+today(), JSON.stringify(entries)); } catch(e){}
+  fbSaveEntry(entry);
+  render();
+}
+function delEntry(id) {
+  entries = entries.filter(function(e){ return e.id !== id; });
+  try { localStorage.setItem('fj_'+today(), JSON.stringify(entries)); } catch(e){}
+  fbDeleteEntry(id);
+  render();
+}
+function render() {
+  var list = $('eList');
+  $('eCnt').textContent = entries.length;
+  $('genBtn').disabled = !entries.length;
+  if (!entries.length) { list.innerHTML = '<div class="empty">Noch keine Einträge heute</div>'; return; }
+  list.innerHTML = entries.slice().reverse().map(function(e){
+    return '<div class="ec"><div class="et">'+e.time+'</div><div class="dots">'+getDotsHtml(e.text)+'</div><div class="eb"><div class="ecat">'+e.cat+'</div><div class="etxt">'+e.text+'</div></div><button class="edel" onclick="delEntry('+e.id+')">×</button></div>';
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+// GENERATE REPORT
+// ═══════════════════════════════════════════════════════════
+$('genBtn').addEventListener('click', async function(){
+  $('repOv').classList.add('open');
+  $('rc').className = 'loading';
+  $('rc').textContent = 'Bericht wird erstellt…';
+  $('repMeta').textContent = new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}) + ' · ' + entries.length + ' Einträge';
+  ['cpBtn','txBtn','pdBtn'].forEach(function(id){ $(id).disabled = true; });
+
+  var cats = {};
+  entries.forEach(function(e){ if (!cats[e.cat]) cats[e.cat]=[]; cats[e.cat].push('['+e.time+'] '+e.text); });
+  var txt = Object.entries(cats).map(function(kv){ return '=== '+kv[0]+' ===\n'+kv[1].join('\n'); }).join('\n\n');
+
+  var prompt = 'Du bist ein Schreibassistent für Führungskräfte.\n\nDEINE AUFGABE: Forme die Notizen in einen sachlichen Tagesbericht in der Ich-Form um.\n\nSTIL:\n- Kurze, direkte Sätze – wie ein Protokoll\n- Ich-Form: "Ich habe...", "Ich entscheide...", "Ich war..."\n- KEINE Floskeln, KEIN Schnickschnack – nur Fakten\n- Jeder Satz beginnt mit dem Zeitstempel: [HH:MM]\n- Beispiel: "[08:15] Jaworski hat mit dem Streichen begonnen."\n\nSTRENGE REGELN:\n- Verwende AUSSCHLIESSLICH Informationen aus den Notizen\n- Erfinde NICHTS\n- Lasse KEINEN Inhaltspunkt weg\n- Wenn zu einer Kategorie keine Notizen: schreibe NICHTS\n- Beginne jeden Abschnitt mit fett markierter Überschrift\n\nNotizen vom heutigen Tag:\n' + txt;
+
+  try {
+    var res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+openaiKey},
+      body: JSON.stringify({model:'llama-3.3-70b-versatile',max_tokens:1500,messages:[{role:'system',content:'Du bist ein professioneller Assistent für Führungskräfte. Antworte immer auf Deutsch.'},{role:'user',content:prompt}]})
+    });
+    var data = await res.json();
+    var report = (data.choices && data.choices[0] && data.choices[0].message) ? data.choices[0].message.content : 'Kein Ergebnis.';
+    $('rc').className = '';
+    $('rc').textContent = report;
+    ['cpBtn','txBtn','pdBtn'].forEach(function(id){ $(id).disabled = false; });
+    $('rc').dataset.report = report;
+  } catch(err) {
+    $('rc').className = '';
+    $('rc').textContent = 'Fehler: ' + err.message;
+  }
+});
+
+$('repClose').addEventListener('click', function(){ $('repOv').classList.remove('open'); });
+$('cpBtn').addEventListener('click', function(){ navigator.clipboard.writeText($('rc').dataset.report||'').then(function(){ showToast('Kopiert!'); }).catch(function(){ showToast('Fehler'); }); });
+$('txBtn').addEventListener('click', function(){
+  var r = $('rc').dataset.report||'';
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([r],{type:'text/plain;charset=utf-8'}));
+  a.download = 'Tagesbericht_'+today()+'.txt'; a.click();
+  showToast('TXT heruntergeladen');
+});
+$('pdBtn').addEventListener('click', function(){
+  var r = $('rc').dataset.report||'';
+  var ds = new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
+  var erows = entries.map(function(e){ return '<tr><td style="font-family:monospace;font-size:11px;color:#888;padding:4px 8px 4px 0;white-space:nowrap">'+e.time+'</td><td style="font-family:monospace;font-size:10px;color:#b07830;padding:4px 8px 4px 0">'+e.cat+'</td><td style="font-size:13px;padding:4px 0">'+e.text+'</td></tr>'; }).join('');
+  var body = r.split('\n').map(function(l){ return l.startsWith('##') ? '<h3 style="margin:16px 0 6px;font-size:14px;color:#333">'+l.replace(/^#+\s*/,'')+'</h3>' : l.startsWith('#') ? '<h2 style="margin:20px 0 8px;font-size:16px;color:#111">'+l.replace(/^#+\s*/,'')+'</h2>' : l.trim()==='' ? '<br>' : '<p style="margin:0 0 6px;font-size:13px;line-height:1.7">'+l+'</p>'; }).join('');
+  var w = window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Tagesbericht</title><style>body{font-family:Segoe UI,Arial,sans-serif;padding:36px;max-width:700px;margin:0 auto;color:#222}h1{font-size:20px;margin-bottom:4px}.meta{color:#888;font-size:12px;margin-bottom:22px;font-family:monospace}hr{border:none;border-top:1px solid #ddd;margin:18px 0}table{width:100%;border-collapse:collapse}@media print{body{padding:20px}}</style></head><body><h1>Führungsjournal – Tagesbericht</h1><div class="meta">'+ds+' · '+entries.length+' Einträge</div><hr>'+body+'<hr><p style="font-family:monospace;font-size:11px;color:#999;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Rohe Notizen</p><table>'+erows+'</table><script>window.onload=function(){window.print();}<\/script></body></html>');
+  w.document.close();
+  showToast('PDF-Druck geöffnet');
+});
+
+// ═══════════════════════════════════════════════════════════
+// CONTAINER SYSTEM
+// ═══════════════════════════════════════════════════════════
+function loadContainers() { try { return JSON.parse(localStorage.getItem('fj_containers')||'[]'); } catch(e){ return []; } }
+function saveContainers(c) {
+  localStorage.setItem('fj_containers', JSON.stringify(c));
+  fbSaveContainers(c);
+}
+
+function renderContainers() {
+  var all = loadContainers();
+  var active = all.filter(function(c){ return c.status==='active'; });
+  var done = all.filter(function(c){ return c.status==='done'; });
+  $('cActCnt').textContent = active.length;
+  $('cDoneCnt').textContent = done.length;
+  $('cActList').innerHTML = active.length ? active.map(cCard).join('') : '<div class="empty">Keine aktiven Container</div>';
+  $('cDoneList').innerHTML = done.length ? done.map(cCard).join('') : '<div class="empty">Noch keine abgeschlossenen Container</div>';
+}
+
+function cCard(c) {
+  var dur = c.endTime ? calcDur(c.startTime, c.endTime) : calcDur(c.startTime, Date.now());
+  var slog = c.statusLog.map(function(s){
+    return '<div class="csitem"><span class="cstime">'+s.time+'</span>'+s.text+(s.newTasks?'<br><span style="color:var(--accent);font-size:.7rem">+ '+s.newTasks+'</span>':'')+(s.workers?'<br><span style="color:var(--text2);font-size:.7rem">👷 '+s.workers+'</span>':'')+'</div>';
+  }).join('');
+  var acts = c.status==='active'
+    ? '<button class="cact" onclick="openSForm(\''+c.id+'\')">📊 Status</button><button class="cact g" onclick="quickDone(\''+c.id+'\')">✓ Fertig</button><button class="cact" onclick="exportCPDF(\''+c.id+'\')">📄 PDF</button><button class="cact" onclick="exportCCSV(\''+c.id+'\')">⬇ CSV</button>'
+    : '<button class="cact" onclick="exportCPDF(\''+c.id+'\')">📄 PDF</button><button class="cact" onclick="exportCCSV(\''+c.id+'\')">⬇ CSV</button><button class="cact r" onclick="delContainer(\''+c.id+'\')">🗑</button>';
+  return '<div class="cbox"><div class="cbox-hdr"><div class="cnum">📦 '+c.number+'</div><div class="cbadge '+c.status+'">'+(c.status==='active'?'Aktiv':'Fertig')+'</div><div class="cdur">'+dur+'</div></div><div class="cinfo">👷 '+c.workers+'</div><div class="ctasks"><span style="font-family:IBM Plex Mono,monospace;font-size:.6rem;color:var(--text2);text-transform:uppercase;letter-spacing:.08em">Aufgaben: </span>'+c.tasks+'</div>'+(c.statusLog.length?'<div class="cslog">'+slog+'</div>':'')+'<div class="cacts">'+acts+'</div></div>';
+}
+
+$('cNewBtn').addEventListener('click', function(){
+  $('cNum').value=''; $('cWorkers').value=''; $('cTasks').value=''; $('cNote').value='';
+  $('cFormOv').classList.add('open');
+});
+$('cFormCancel').addEventListener('click', function(){ $('cFormOv').classList.remove('open'); });
+$('cFormSave').addEventListener('click', function(){
+  var num=$('cNum').value.trim(), workers=$('cWorkers').value.trim(), tasks=$('cTasks').value.trim(), note=$('cNote').value.trim();
+  if (!num||!workers||!tasks) { showToast('Bitte alle Pflichtfelder ausfüllen'); return; }
+  var all = loadContainers();
+  all.push({id:'c_'+Date.now(),number:num,workers:workers,tasks:tasks,note:note,startTime:Date.now(),startTimeStr:nowTime(),startDate:today(),endTime:null,endTimeStr:null,status:'active',statusLog:[]});
+  saveContainers(all);
+  $('cFormOv').classList.remove('open');
+  renderContainers();
+  showToast('Container '+num+' gestartet ✓');
+});
+
+function openSForm(cid) {
+  var c = loadContainers().find(function(x){ return x.id===cid; });
+  if (!c) return;
+  $('sFormTitle').textContent = '📊 Status · '+c.number;
+  $('sCid').value = cid;
+  $('sTxt').value=''; $('sNewTasks').value=''; $('sWorkers').value=c.workers;
+  $('sFormOv').classList.add('open');
+}
+$('sCancel').addEventListener('click', function(){ $('sFormOv').classList.remove('open'); });
+
+function saveStatus(done) {
+  var cid=$('sCid').value, text=$('sTxt').value.trim(), newTasks=$('sNewTasks').value.trim(), workers=$('sWorkers').value.trim();
+  if (!text) { showToast('Bitte Status eingeben'); return; }
+  var all = loadContainers();
+  var idx = all.findIndex(function(x){ return x.id===cid; });
+  if (idx<0) return;
+  all[idx].statusLog.push({time:nowTime(),timestamp:Date.now(),text:text,newTasks:newTasks||null,workers:workers||null});
+  if (newTasks) all[idx].tasks += '\n+ ' + newTasks;
+  if (workers) all[idx].workers = workers;
+  if (done) { all[idx].status='done'; all[idx].endTime=Date.now(); all[idx].endTimeStr=nowTime(); }
+  saveContainers(all);
+  $('sFormOv').classList.remove('open');
+  renderContainers();
+  showToast(done?'Container fertig ✓':'Status gespeichert ✓');
+}
+$('sSave').addEventListener('click', function(){ saveStatus(false); });
+$('sDone').addEventListener('click', function(){ saveStatus(true); });
+
+function quickDone(cid) {
+  var all = loadContainers();
+  var idx = all.findIndex(function(x){ return x.id===cid; });
+  if (idx<0) return;
+  all[idx].status='done'; all[idx].endTime=Date.now(); all[idx].endTimeStr=nowTime();
+  saveContainers(all); renderContainers(); showToast('Fertig gemeldet ✓');
+}
+function delContainer(cid) {
+  if (!confirm('Container wirklich löschen?')) return;
+  saveContainers(loadContainers().filter(function(x){ return x.id!==cid; }));
+  fbDeleteContainer(cid);
+  renderContainers();
+}
+
+function exportCPDF(cid) {
+  var c = loadContainers().find(function(x){ return x.id===cid; });
+  if (!c) return;
+  var dur = c.endTime ? calcDur(c.startTime,c.endTime) : calcDur(c.startTime,Date.now());
+  var srows = c.statusLog.map(function(s){ return '<tr><td style="font-family:monospace;font-size:11px;color:#888;padding:5px 10px 5px 0;white-space:nowrap;vertical-align:top">'+s.time+'</td><td style="font-size:13px;padding:5px 0;vertical-align:top">'+s.text+(s.newTasks?'<br><span style="color:#b07830;font-size:11px">+ '+s.newTasks+'</span>':'')+(s.workers?'<br><span style="color:#888;font-size:11px">👷 '+s.workers+'</span>':'')+'</td></tr>'; }).join('');
+  var w = window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Container '+c.number+'</title><style>body{font-family:Segoe UI,Arial,sans-serif;padding:36px;max-width:700px;margin:0 auto;color:#222}h1{font-size:20px;margin-bottom:4px}.meta{color:#888;font-size:12px;font-family:monospace;margin-bottom:20px}.block{margin-bottom:20px}.block h2{font-size:14px;color:#333;margin-bottom:8px;border-bottom:1px solid #eee;padding-bottom:4px}table{width:100%;border-collapse:collapse}.badge{display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-family:monospace}.active{background:#e8f5ed;color:#2d7a4f}.done{background:#f0f0f0;color:#666}@media print{body{padding:20px}}</style></head><body><h1>📦 Container '+c.number+'</h1><div class="meta">Status: <span class="badge '+c.status+'">'+(c.status==='done'?'Fertig':'Aktiv')+'</span> &nbsp;·&nbsp; Start: '+c.startTimeStr+' ('+c.startDate+') &nbsp;·&nbsp; '+(c.endTimeStr?'Ende: '+c.endTimeStr+' &nbsp;·&nbsp; ':'')+'Dauer: '+dur+'</div><div class="block"><h2>Mitarbeiter</h2><p style="font-size:13px">'+c.workers+'</p></div><div class="block"><h2>Aufgaben</h2><p style="font-size:13px;white-space:pre-wrap">'+c.tasks+'</p></div>'+(c.note?'<div class="block"><h2>Bemerkung</h2><p style="font-size:13px">'+c.note+'</p></div>':'')+'<div class="block"><h2>Statusmeldungen ('+c.statusLog.length+')</h2>'+(c.statusLog.length?'<table>'+srows+'</table>':'<p style="color:#888;font-size:13px">Keine</p>')+'</div><script>window.onload=function(){window.print();}<\/script></body></html>');
+  w.document.close();
+}
+
+function exportCCSV(cid) {
+  var c = loadContainers().find(function(x){ return x.id===cid; });
+  if (!c) return;
+  var dur = c.endTime ? calcDur(c.startTime,c.endTime) : calcDur(c.startTime,Date.now());
+  var q = function(v){ return '"'+String(v||'').replace(/"/g,'""')+'"'; };
+  var rows = [
+    ['Feld','Wert'],
+    ['Containernummer',c.number],['Status',c.status==='done'?'Fertig':'Aktiv'],
+    ['Startzeit',c.startTimeStr+' '+c.startDate],['Endzeit',c.endTimeStr||'-'],
+    ['Gesamtdauer',dur],['Mitarbeiter',c.workers],
+    ['Aufgaben',c.tasks.replace(/\n/g,' | ')],['Bemerkung',c.note||'-'],
+    [],['Statusmeldungen','Zeit','Mitarbeiter','Neue Aufgaben'],
+  ].concat(c.statusLog.map(function(s){ return [s.text,s.time,s.workers||'-',s.newTasks||'-']; }));
+  var csv = rows.map(function(r){ return r.map(q).join(','); }).join('\n');
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download = 'Container_'+c.number+'_'+today()+'.csv'; a.click();
+  showToast('CSV exportiert ✓');
+}
+
+// ═══════════════════════════════════════════════════════════
+// QR SCANNER
+// ═══════════════════════════════════════════════════════════
+var qrStream=null, qrAnim=null;
+$('qrBtn').addEventListener('click', openQR);
+$('qrClose').addEventListener('click', closeQR);
+
+async function openQR() {
+  try {
+    qrStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    $('qrVideo').srcObject = qrStream;
+    await $('qrVideo').play();
+    $('qrOverlay').classList.add('open');
+    scanLoop();
+  } catch(err) { showToast('Kamera: '+err.message); }
+}
+function closeQR() {
+  if (qrStream) { qrStream.getTracks().forEach(function(t){t.stop();}); qrStream=null; }
+  if (qrAnim) { cancelAnimationFrame(qrAnim); qrAnim=null; }
+  $('qrOverlay').classList.remove('open');
+}
+function scanLoop() {
+  var video = $('qrVideo');
+  if (!video.videoWidth) { qrAnim = requestAnimationFrame(scanLoop); return; }
+  var canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+  var ctx = canvas.getContext('2d'); ctx.drawImage(video,0,0);
+  var imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+  if (window.jsQR) {
+    var code = jsQR(imageData.data, imageData.width, imageData.height);
+    if (code) { onQR(code.data); return; }
+  }
+  if ('BarcodeDetector' in window) {
+    var det = new BarcodeDetector({formats:['qr_code','code_128','code_39','ean_13']});
+    det.detect(canvas).then(function(b){ if(b.length){onQR(b[0].rawValue);}else{qrAnim=requestAnimationFrame(scanLoop);} }).catch(function(){ qrAnim=requestAnimationFrame(scanLoop); });
+  } else {
+    qrAnim = requestAnimationFrame(scanLoop);
+  }
+}
+function onQR(val) {
+  closeQR();
+  var clean = val.replace(/[^a-zA-Z0-9-]/g,'').toUpperCase();
+  $('cNum').value = clean;
+  showToast('QR erkannt: '+clean);
+  if (navigator.vibrate) navigator.vibrate(100);
+}
+
+// ═══════════════════════════════════════════════════════════
+// OCR PHOTO
+// ═══════════════════════════════════════════════════════════
+$('ocrBtn').addEventListener('click', function(){ $('ocrFile').click(); });
+$('ocrFile').addEventListener('change', async function(e){
+  var file = e.target.files[0]; if (!file) return;
+  e.target.value='';
+  $('ocrOverlay').classList.add('open');
+  $('ocrStatus').textContent = '⏳ Analysiere Bild…';
+  $('ocrRes').style.display='none';
+  $('ocrPreview').style.display='none';
+
+  var reader = new FileReader();
+  reader.onload = async function(ev){
+    var base64 = ev.target.result;
+    $('ocrPreview').src = base64;
+    $('ocrPreview').style.display='block';
+    try {
+      var b64data = base64.split(',')[1];
+      var mime = file.type||'image/jpeg';
+      var res = await fetch('https://api.groq.com/openai/v1/chat/completions',{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+openaiKey},
+        body: JSON.stringify({model:'meta-llama/llama-4-scout-17b-16e-instruct',max_tokens:100,messages:[{role:'user',content:[{type:'image_url',image_url:{url:'data:'+mime+';base64,'+b64data}},{type:'text',text:'Extrahiere die Containernummer aus diesem Bild. Containernummern sind 6-stellige Zahlen oder beginnen mit CTX- gefolgt von Zahlen. Antworte NUR mit der Nummer selbst. Wenn keine Nummer erkennbar: antworte NICHT_ERKANNT'}]}]})
+      });
+      var data = await res.json();
+      var result = (data.choices&&data.choices[0]&&data.choices[0].message) ? data.choices[0].message.content.trim() : 'NICHT_ERKANNT';
+      if (result==='NICHT_ERKANNT'||result.length<3) {
+        $('ocrStatus').textContent='❌ Nicht erkannt – manuell eingeben';
+        $('ocrResultInput').value='';
+      } else {
+        var clean = result.replace(/[^a-zA-Z0-9-]/g,'').toUpperCase();
+        $('ocrStatus').textContent='✓ Erkannt!';
+        $('ocrResultInput').value=clean;
+        if (navigator.vibrate) navigator.vibrate(100);
+      }
+      $('ocrRes').style.display='block';
+    } catch(err) { $('ocrStatus').textContent='Fehler: '+err.message; }
+  };
+  reader.readAsDataURL(file);
+});
+$('ocrConfirm').addEventListener('click', function(){
+  var val = $('ocrResultInput').value.trim();
+  if (val) { $('cNum').value=val; showToast('Nummer übernommen: '+val); }
+  $('ocrOverlay').classList.remove('open');
+});
+$('ocrRetry').addEventListener('click', function(){
+  $('ocrOverlay').classList.remove('open');
+  setTimeout(function(){ $('ocrFile').click(); }, 300);
+});
+$('ocrCancel').addEventListener('click', function(){ $('ocrOverlay').classList.remove('open'); });
+
+// ═══════════════════════════════════════════════════════════
+// FIREBASE SYNC
+// ═══════════════════════════════════════════════════════════
+var fbConfig = {
+  apiKey: "AIzaSyCzowjBMyblK6S_9AMeLJdTsHgZ-HLJr4g",
+  authDomain: "journal-5c29a.firebaseapp.com",
+  databaseURL: "https://journal-5c29a-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "journal-5c29a",
+  storageBucket: "journal-5c29a.firebasestorage.app",
+  messagingSenderId: "276797671423",
+  appId: "1:276797671423:web:44f216bb51d85e13c549ca"
+};
+
+var fbApp = null;
+var db = null;
+var syncEnabled = false;
+
+function initFirebase() {
+  try {
+    fbApp = firebase.initializeApp(fbConfig);
+    db = firebase.database();
+    syncEnabled = true;
+    setSyncDot('on');
+    listenToFirebase();
+  } catch(e) {
+    console.warn('Firebase init failed:', e);
+    setSyncDot('err');
+  }
+}
+
+function setSyncDot(state) {
+  var dot = document.getElementById('syncDot');
+  if (!dot) return;
+  dot.className = state;
+  dot.title = state==='on' ? 'Verbunden ✓' : state==='sync' ? 'Synchronisiert…' : state==='err' ? 'Fehler' : 'Offline';
+}
+
+// ── WRITE TO FIREBASE ─────────────────────────────────────
+function fbSaveEntry(entry) {
+  if (!syncEnabled || !db) return;
+  setSyncDot('sync');
+  db.ref('journal/' + today() + '/' + entry.id).set(entry, function(err){
+    setSyncDot(err ? 'err' : 'on');
+  });
+}
+
+function fbDeleteEntry(id) {
+  if (!syncEnabled || !db) return;
+  db.ref('journal/' + today() + '/' + id).remove();
+}
+
+function fbSaveContainers(containers) {
+  if (!syncEnabled || !db) return;
+  setSyncDot('sync');
+  // Save each container individually by id
+  containers.forEach(function(c) {
+    db.ref('containers/' + c.id).set(c, function(err){
+      setSyncDot(err ? 'err' : 'on');
+    });
+  });
+}
+
+function fbDeleteContainer(cid) {
+  if (!syncEnabled || !db) return;
+  db.ref('containers/' + cid).remove();
+}
+
+// ── LISTEN FROM FIREBASE (live updates) ───────────────────
+var fbListening = false;
+function listenToFirebase() {
+  if (fbListening) return;
+  fbListening = true;
+
+  // Listen to today's journal entries
+  db.ref('journal/' + today()).on('value', function(snap) {
+    var data = snap.val();
+    if (data) {
+      var remote = Object.values(data);
+      // Merge: add remote entries not in local
+      var localIds = entries.map(function(e){ return e.id; });
+      var changed = false;
+      remote.forEach(function(e) {
+        if (localIds.indexOf(e.id) === -1) {
+          entries.push(e);
+          changed = true;
+        }
+      });
+      // Remove local entries deleted remotely
+      var remoteIds = remote.map(function(e){ return e.id; });
+      var before = entries.length;
+      entries = entries.filter(function(e){ return remoteIds.indexOf(e.id) > -1; });
+      if (entries.length !== before) changed = true;
+
+      if (changed) {
+        entries.sort(function(a,b){ return a.id - b.id; });
+        try { localStorage.setItem('fj_'+today(), JSON.stringify(entries)); } catch(ex){}
+        render();
+      }
+    } else {
+      // Remote is empty - keep local but don't overwrite
+    }
+    setSyncDot('on');
+  });
+
+  // Listen to containers
+  db.ref('containers').on('value', function(snap) {
+    var data = snap.val();
+    if (data) {
+      var remote = Object.values(data);
+      var local = loadContainers();
+      var localIds = local.map(function(c){ return c.id; });
+      var changed = false;
+
+      remote.forEach(function(c) {
+        var idx = local.findIndex(function(x){ return x.id===c.id; });
+        if (idx === -1) {
+          local.push(c); changed = true;
+        } else if (JSON.stringify(local[idx]) !== JSON.stringify(c)) {
+          local[idx] = c; changed = true;
+        }
+      });
+
+      if (changed) {
+        saveContainers(local);
+        if (document.getElementById('pageC').classList.contains('on')) renderContainers();
+      }
+    }
+    setSyncDot('on');
+  });
+}
+
+// ── PATCH saveEntry TO ALSO SYNC ──────────────────────────
+var _origSaveEntry = null; // will be set after saveEntry is defined
+
+// ── PATCH saveContainers TO ALSO SYNC ────────────────────
+var _origSaveContainers = null; // will be set after saveContainers is defined
+
+// ═══════════════════════════════════════════════════════════
+// BACKUP SYSTEM
+// ═══════════════════════════════════════════════════════════
+function collectAllData() {
+  var data = {
+    exportDate: new Date().toISOString(),
+    exportDateStr: new Date().toLocaleString('de-DE'),
+    journal: {},
+    containers: loadContainers()
+  };
+  // Collect all journal days from localStorage
+  for (var i = 0; i < localStorage.length; i++) {
+    var key = localStorage.key(i);
+    if (key && key.indexOf('fj_') === 0 && key !== 'fj_containers' && key !== 'fj_oai_key' && key !== 'fj_ctx' && key !== 'fj_last_backup') {
+      var day = key.replace('fj_','');
+      try { data.journal[day] = JSON.parse(localStorage.getItem(key)||'[]'); } catch(e){}
+    }
+  }
+  return data;
+}
+
+function downloadBackup() {
+  var data = collectAllData();
+  var json = JSON.stringify(data, null, 2);
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([json],{type:'application/json;charset=utf-8'}));
+  a.download = 'Fuehrungsjournal_Backup_' + today() + '.json';
+  a.click();
+  localStorage.setItem('fj_last_backup', new Date().toISOString());
+  showToast('Backup gespeichert ✓');
+}
+
+function checkAutoBackup() {
+  var now = new Date();
+  var h = now.getHours();
+  var m = now.getMinutes();
+  var todayStr = today();
+  var lastBackup = localStorage.getItem('fj_last_backup') || '';
+  var lastBackupDay = lastBackup ? lastBackup.slice(0,10) : '';
+
+  // Auto backup at 20:00 if not yet done today
+  if (h === 20 && lastBackupDay !== todayStr) {
+    // Check if there's anything to back up
+    var entries = [];
+    try { entries = JSON.parse(localStorage.getItem('fj_'+todayStr)||'[]'); } catch(e){}
+    var containers = loadContainers();
+    if (entries.length > 0 || containers.length > 0) {
+      downloadBackup();
+    }
+  }
+}
+
+// Check every minute for auto backup
+function startBackupTimer() {
+  checkAutoBackup();
+  setInterval(checkAutoBackup, 60000);
+}
+
+// ═══════════════════════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════════════════════
 initApp();
+startBackupTimer();
 </script>
 </body>
 </html>
