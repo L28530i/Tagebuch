@@ -466,7 +466,7 @@ async function stopRec() {
 
     const isGroq = openaiKey.startsWith('gsk_');
     const apiUrl = isGroq ? 'https://api.groq.com/openai/v1/audio/transcriptions' : 'https://api.openai.com/v1/audio/transcriptions';
-    const modelName = isGroq ? 'whisper-large-v3' : 'whisper-1';
+    const modelName = isGroq ? 'whisper-large-v3-turbo' : 'whisper-1';
     formData.set('model', modelName);
     const res = await fetch(apiUrl, {
       method: 'POST',
@@ -643,7 +643,8 @@ function getWhisperPrompt() {
     if (c.namen) parts.push(c.namen);
     if (c.begriffe) parts.push(c.begriffe);
     if (c.extra) parts.push(c.extra);
-    return parts.join(', ');
+    const result = parts.join(', ');
+    return result.slice(0, 880); // Whisper limit: max 896 chars
   } catch(e) { return 'Führungskraft, berufliche Notizen'; }
 }
 document.getElementById('ctxSaveBtn').addEventListener('click', () => {
@@ -667,18 +668,19 @@ async function correctWithAI(rawText) {
   try {
     const ctx = (() => { try { return JSON.parse(localStorage.getItem('fj_ctx')||'{}'); } catch(e){return{};} })();
     const ctxHint = [ctx.branche, ctx.namen, ctx.begriffe, ctx.extra].filter(Boolean).join(', ');
-    const sysPrompt = `Du bist ein Korrektur-Assistent für gesprochene Notizen einer Führungskraft.
+    const sysPrompt = `Du bist ein minimaler Korrektur-Assistent für gesprochene Notizen.
 Kontext: ${ctxHint || 'berufliche Führungsnotizen'}
 
-DEINE AUFGABE: Korrigiere den folgenden transkribierten Text.
+DEINE AUFGABE: Nur minimale Korrekturen – so wenig wie möglich ändern.
 
-REGELN:
-- Vervollständige abgebrochene oder halbfertige Sätze sinnvoll
-- Korrigiere offensichtliche Erkennungsfehler anhand des Kontexts (z.B. falsch gehörte Namen oder Fachbegriffe)
-- Verbessere Grammatik und Satzbau
-- Behalte den GENAUEN INHALT und SINN bei – erfinde NICHTS dazu
-- Wenn du dir bei einem Wort nicht sicher bist, lasse es lieber so wie es ist
-- Antworte NUR mit dem korrigierten Text, ohne Erklärungen`;
+STRENGE REGELN:
+- Korrigiere NUR eindeutige Spracherkennungsfehler (z.B. falsches Wort das keinen Sinn ergibt)
+- Ersetze falsch gehörte Namen/Fachbegriffe NUR wenn du dir 100% sicher bist
+- Vervollständige abgebrochene Sätze NUR mit einem Punkt oder Komma – füge KEINE neuen Wörter hinzu
+- Ändere NIEMALS den Sinn oder die Aussage
+- Ändere KEINE Wörter die inhaltlich Sinn ergeben, auch wenn sie grammatikalisch unvollständig sind
+- Wenn du unsicher bist: Text UNVERÄNDERT lassen
+- Antworte NUR mit dem (minimal) korrigierten Text, ohne Erklärungen oder Kommentare`;
 
     const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
