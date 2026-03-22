@@ -481,26 +481,9 @@ $('ibX').addEventListener('click', function(){ $('ib').classList.remove('show');
 // API KEY
 // ═══════════════════════════════════════════════════════════
 var openaiKey = '';
+var APP_PIN = '1234';
 
-function initApp() {
-  var saved = localStorage.getItem('fj_oai_key');
-  if (saved) { openaiKey = saved; showApp(); }
-}
-
-$('saveKeyBtn').addEventListener('click', function(){
-  var raw = $('apiKeyInput').value;
-  var key = raw.replace(/[\s\u200B\uFEFF]/g, '');
-  if (key.length < 10) { showToast('Key zu kurz'); return; }
-  if (key.indexOf('sk-') !== 0 && key.indexOf('gsk_') !== 0) {
-    showToast('Beginnt mit: "' + key.slice(0,6) + '..." – erwartet gsk_ oder sk-');
-    return;
-  }
-  openaiKey = key;
-  localStorage.setItem('fj_oai_key', key);
-  showApp();
-  showToast('Key gespeichert ✓');
-});
-
+// ── SHOW APP ──────────────────────────────────────────────
 function showApp() {
   $('apiSetup').style.display = 'none';
   $('pinSetup').style.display = 'none';
@@ -509,16 +492,36 @@ function showApp() {
   loadCtx();
   render();
   renderContainers();
-  setTimeout(initFirebase, 500);
+  setTimeout(initFirebase, 800);
 }
+
+// ── API KEY ───────────────────────────────────────────────
+$('saveKeyBtn').addEventListener('click', function(){
+  var raw = $('apiKeyInput').value;
+  var key = raw.replace(/[\s\u200B\uFEFF]/g, '');
+  if (key.length < 10) { showToast('Key zu kurz'); return; }
+  if (key.indexOf('sk-') !== 0 && key.indexOf('gsk_') !== 0) {
+    showToast('Beginnt mit: "' + key.slice(0,6) + '..."'); return;
+  }
+  openaiKey = key;
+  localStorage.setItem('fj_oai_key', key);
+  showToast('Key gespeichert ✓');
+  // After key saved, check PIN
+  if (sessionStorage.getItem('fj_pin_ok') === 'yes') {
+    showApp();
+  } else {
+    $('apiSetup').style.display = 'none';
+    $('pinSetup').style.display = 'flex';
+  }
+});
 
 function resetKey() {
   if (!confirm('API Key löschen?')) return;
   localStorage.removeItem('fj_oai_key');
   openaiKey = '';
   $('apiKeyInput').value = '';
-  $('apiSetup').style.display = 'flex';
   $('app').style.display = 'none';
+  $('apiSetup').style.display = 'flex';
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1287,40 +1290,16 @@ function startBackupTimer() {
 
 // ═══════════════════════════════════════════════════════════
 // START
-// ═══════════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════════
-// PIN PROTECTION
-// ═══════════════════════════════════════════════════════════
-var APP_PIN = '1234'; // Change this to your desired PIN
-var pinVerified = false;
-
-function checkPin() {
-  // Check if PIN already verified this session
-  if (sessionStorage.getItem('fj_pin_ok') === 'yes') {
-    pinVerified = true;
-    return true;
-  }
-  return false;
-}
-
-function showPinScreen() {
-  document.getElementById('pinSetup').style.display = 'flex';
-}
-
+// ── PIN ──────────────────────────────────────────────────
 document.getElementById('pinBtn').addEventListener('click', function(){
   var entered = document.getElementById('pinInput').value.trim();
   if (entered === APP_PIN) {
     sessionStorage.setItem('fj_pin_ok', 'yes');
-    pinVerified = true;
     document.getElementById('pinErr').style.display = 'none';
-    var savedKey = localStorage.getItem('fj_oai_key');
-    if (savedKey) {
-      openaiKey = savedKey;
-      showApp();
-    } else {
-      document.getElementById('pinSetup').style.display = 'none';
-      initApp();
-    }
+    document.getElementById('pinInput').value = '';
+    var key = localStorage.getItem('fj_oai_key');
+    if (key) { openaiKey = key; showApp(); }
+    else { $('pinSetup').style.display='none'; $('apiSetup').style.display='flex'; }
   } else {
     document.getElementById('pinErr').style.display = 'block';
     document.getElementById('pinInput').value = '';
@@ -1330,19 +1309,30 @@ document.getElementById('pinInput').addEventListener('keydown', function(e){
   if (e.key === 'Enter') document.getElementById('pinBtn').click();
 });
 
-// Start with PIN check
-if (checkPin()) {
-  initApp();
-} else {
-  // Check if API key exists - if not, show API setup first
-  var savedKey = localStorage.getItem('fj_oai_key');
-  if (savedKey) {
-    showPinScreen();
-  } else {
-    // Show API setup, then PIN after
-    initApp();
+// ── STARTUP ───────────────────────────────────────────────
+(function(){
+  var key = localStorage.getItem('fj_oai_key');
+  var pinOk = sessionStorage.getItem('fj_pin_ok') === 'yes';
+
+  if (!key) {
+    // No key yet → show API setup screen
+    $('apiSetup').style.display = 'flex';
+    return;
   }
-}
+
+  // Key exists
+  openaiKey = key;
+
+  if (pinOk) {
+    // PIN already verified this session → go straight to app
+    showApp();
+  } else {
+    // Need PIN
+    $('apiSetup').style.display = 'none';
+    $('pinSetup').style.display = 'flex';
+  }
+})();
+
 startBackupTimer();
 </script>
 </body>
