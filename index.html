@@ -503,12 +503,13 @@ $('saveKeyBtn').addEventListener('click', function(){
 
 function showApp() {
   $('apiSetup').style.display = 'none';
+  $('pinSetup').style.display = 'none';
   $('app').style.display = 'block';
   $('hDate').innerHTML = new Date().toLocaleDateString('de-DE',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).replace(',','<br>');
   loadCtx();
   render();
   renderContainers();
-  initFirebase();
+  setTimeout(initFirebase, 500);
 }
 
 function resetKey() {
@@ -1311,9 +1312,15 @@ document.getElementById('pinBtn').addEventListener('click', function(){
   if (entered === APP_PIN) {
     sessionStorage.setItem('fj_pin_ok', 'yes');
     pinVerified = true;
-    document.getElementById('pinSetup').style.display = 'none';
     document.getElementById('pinErr').style.display = 'none';
-    initApp();
+    var savedKey = localStorage.getItem('fj_oai_key');
+    if (savedKey) {
+      openaiKey = savedKey;
+      showApp();
+    } else {
+      document.getElementById('pinSetup').style.display = 'none';
+      initApp();
+    }
   } else {
     document.getElementById('pinErr').style.display = 'block';
     document.getElementById('pinInput').value = '';
