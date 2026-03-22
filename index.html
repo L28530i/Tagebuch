@@ -106,6 +106,10 @@
   .bpri:active{background:rgba(200,169,110,.25);}
   .bpri:disabled{opacity:.4;cursor:not-allowed;}
 
+  /* WORKER COLORS */
+  .dots{display:flex;flex-wrap:wrap;gap:2px;width:20px;flex-shrink:0;padding-top:3px;}
+  .dot{width:9px;height:9px;border-radius:2px;}
+
   /* CONFIRM PANEL */
   #confirmPanel{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:160;padding:16px;overflow-y:auto;}
   #confirmPanel.open{display:flex;align-items:flex-start;justify-content:center;}
@@ -466,7 +470,7 @@ async function stopRec() {
 
     const isGroq = openaiKey.startsWith('gsk_');
     const apiUrl = isGroq ? 'https://api.groq.com/openai/v1/audio/transcriptions' : 'https://api.openai.com/v1/audio/transcriptions';
-    const modelName = isGroq ? 'whisper-large-v3-turbo' : 'whisper-1';
+    const modelName = isGroq ? 'whisper-large-v3' : 'whisper-1';
     formData.set('model', modelName);
     const res = await fetch(apiUrl, {
       method: 'POST',
@@ -534,6 +538,52 @@ function delEntry(id){
   try{localStorage.setItem('fj_'+today(),JSON.stringify(entries));}catch(e){}
   render();
 }
+// ── WORKER COLOR SYSTEM ───────────────────────────────────
+const WORKER_COLORS = [
+  '#e07b5a','#5a9fe0','#5ac87a','#c8a96e',
+  '#9b5ae0','#e0c45a','#5ae0d4','#e05a8a',
+  '#7ae05a','#5a6de0'
+];
+const workerColorMap = {};
+let colorIndex = 0;
+
+function getWorkerColor(name) {
+  const key = name.toLowerCase().trim();
+  if (!workerColorMap[key]) {
+    workerColorMap[key] = WORKER_COLORS[colorIndex % WORKER_COLORS.length];
+    colorIndex++;
+  }
+  return workerColorMap[key];
+}
+
+function detectWorkers(text) {
+  // Get known names from context
+  try {
+    const ctx = JSON.parse(localStorage.getItem('fj_ctx') || '{}');
+    const namen = (ctx.namen || '').split(/[,;\s]+/).map(n=>n.trim()).filter(n=>n.length>2);
+    const found = [];
+    namen.forEach(name => {
+      if (text.toLowerCase().includes(name.toLowerCase())) {
+        found.push(name);
+      }
+    });
+    return found;
+  } catch(e) { return []; }
+}
+
+function getDotsHtml(text) {
+  const workers = detectWorkers(text);
+  if (workers.length === 0) return '<div class="dot" style="background:transparent"></div>';
+  // max 4 dots (2x2)
+  const shown = workers.slice(0, 4);
+  // pad to even number for 2x2 grid
+  while (shown.length < 2) shown.push(null);
+  return shown.map(w => w
+    ? `<div class="dot" style="background:${getWorkerColor(w)}" title="${w}"></div>`
+    : `<div class="dot" style="background:transparent"></div>`
+  ).join('');
+}
+
 function render(){
   const l=document.getElementById('eList');
   document.getElementById('eCnt').textContent=entries.length;
@@ -542,6 +592,7 @@ function render(){
   l.innerHTML=entries.slice().reverse().map(e=>`
     <div class="ec">
       <div class="et">${e.time}</div>
+      <div class="dots">${getDotsHtml(e.text)}</div>
       <div class="eb"><div class="ecat">${e.cat}</div><div class="etxt">${e.text}</div></div>
       <button class="edel" onclick="delEntry(${e.id})">×</button>
     </div>`).join('');
@@ -566,17 +617,27 @@ document.getElementById('genBtn').addEventListener('click',async()=>{
 
   const prompt=`Du bist ein Schreibassistent für Führungskräfte.
 
-DEINE AUFGABE: Schreibe die unten stehenden Notizen als Tagesbericht in der ICH-FORM – so als hätte die Führungskraft den Bericht selbst geschrieben.
+DEINE AUFGABE: Forme die Notizen in einen sachlichen Tagesbericht in der Ich-Form um.
+
+STIL:
+- Kurze, direkte Sätze – wie ein Protokoll
+- Ich-Form: "Ich habe...", "Ich entscheide...", "Ich war..."
+- KEINE Floskeln, KEIN Schnickschnack – nur Fakten
+- KEINE Formulierungen wie "Ich habe bemerkt dass", "Es fiel mir auf" – direkt zur Sache
+- Jeder Satz beginnt mit dem Zeitstempel in eckigen Klammern: [HH:MM]
+- Beispiel gut: "[08:15] Jaworski hat mit dem Streichen des Containers begonnen."
+- Beispiel gut: "[09:30] Ich habe entschieden, die Lieferung auf Montag zu verschieben."
+- Beispiel gut: "[11:45] Jaworski fertig mit Container. Arbeit zu 50% abgeschlossen."
+- So kann man den zeitlichen Ablauf und das Tempo der Mitarbeiter nachvollziehen.
 
 STRENGE REGELN:
-- Schreibe IMMER in der Ich-Form (z.B. "Ich habe heute...", "Mir ist aufgefallen...", "Ich habe entschieden...")
-- Verwende AUSSCHLIESSLICH Informationen die in den Notizen stehen
-- Erfinde NICHTS dazu – keine Annahmen, keine Ergänzungen
-- Lasse KEINEN einzigen Inhaltspunkt weg – jede Notiz muss vollständig im Bericht vorkommen
-- Kürze NICHTS – schreibe jeden Punkt vollständig aus
+- Verwende AUSSCHLIESSLICH Informationen aus den Notizen
+- Erfinde NICHTS – keine Annahmen, keine Ergänzungen
+- Lasse KEINEN Inhaltspunkt weg – jede Notiz muss mit Zeitstempel im Bericht vorkommen
+- Behalte die originalen Zeitstempel aus den Notizen – erfinde keine neuen
+- Kürze NICHTS inhaltlich – nur sprachlich glätten
 - Wenn zu einer Kategorie keine Notizen vorhanden sind, schreibe NICHTS dazu
-- Erstelle NUR Abschnitte für Kategorien die tatsächlich Notizen enthalten
-- Schreibe natürlich und menschlich – nicht wie ein Protokoll
+- Erstelle NUR Abschnitte für Kategorien mit Notizen
 - Beginne jeden Abschnitt mit einer fett markierten Überschrift (die Kategorie)
 
 Notizen vom heutigen Tag:
