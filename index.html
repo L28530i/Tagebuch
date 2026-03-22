@@ -1109,26 +1109,28 @@ function setSyncDot(state) {
 }
 
 function initFirebase() {
-  // Test connection with cache busting
   var ts = Date.now();
-  fetch(FB_URL + '/.json?shallow=true&t=' + ts, {
-    cache: 'no-store',
-    mode: 'cors'
-  })
+  fetch(FB_URL + '/.json?shallow=true&t=' + ts, {cache:'no-store'})
     .then(function(r){ 
-      if (r.ok) { 
+      return r.json().then(function(data){
+        return {ok: r.ok, status: r.status, data: data};
+      });
+    })
+    .then(function(result){
+      if (result.ok) { 
         syncEnabled = true; 
         setSyncDot('on');
         startPolling();
         pushLocalToFirebase();
+        showToast('Firebase verbunden ✓');
       } else {
         setSyncDot('err');
-        console.warn('Firebase response not ok:', r.status);
+        showToast('Firebase Fehler: ' + result.status + ' ' + JSON.stringify(result.data));
       }
     })
     .catch(function(e){ 
-      setSyncDot('err'); 
-      console.warn('Firebase fetch error:', e);
+      setSyncDot('err');
+      showToast('Firebase Error: ' + e.message);
     });
 }
 
