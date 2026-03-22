@@ -457,7 +457,7 @@ var mBlob = new Blob([JSON.stringify({
 $('manifestLink').href = URL.createObjectURL(mBlob);
 
 if ('serviceWorker' in navigator) {
-  var swCode = "self.addEventListener('install',function(e){self.skipWaiting();});self.addEventListener('activate',function(e){self.clients.claim();});self.addEventListener('fetch',function(e){if(e.request.url.indexOf('api.groq.com')>-1||e.request.url.indexOf('api.openai.com')>-1||e.request.url.indexOf('api.anthropic.com')>-1)return;e.respondWith(caches.open('fj-v3').then(function(c){return c.match(e.request).then(function(r){return r||fetch(e.request).then(function(res){c.put(e.request,res.clone());return res;});});}));});";
+  var swCode = "self.addEventListener('install',function(e){self.skipWaiting();});self.addEventListener('activate',function(e){caches.keys().then(function(k){k.forEach(function(n){caches.delete(n);});});self.clients.claim();});self.addEventListener('fetch',function(e){var url=e.request.url;if(url.indexOf('api.groq.com')>-1||url.indexOf('api.openai.com')>-1||url.indexOf('api.anthropic.com')>-1||url.indexOf('firebasedatabase.app')>-1||url.indexOf('googleapis.com')>-1)return;e.respondWith(caches.open('fj-v4').then(function(c){return c.match(e.request).then(function(r){return r||fetch(e.request).then(function(res){c.put(e.request,res.clone());return res;});});}));});";
   navigator.serviceWorker.register(URL.createObjectURL(new Blob([swCode],{type:'application/javascript'})),{scope:'./'}).catch(function(){});
 }
 
@@ -1109,8 +1109,12 @@ function setSyncDot(state) {
 }
 
 function initFirebase() {
-  // Test connection
-  fetch(FB_URL + '/.json?shallow=true')
+  // Test connection with cache busting
+  var ts = Date.now();
+  fetch(FB_URL + '/.json?shallow=true&t=' + ts, {
+    cache: 'no-store',
+    mode: 'cors'
+  })
     .then(function(r){ 
       if (r.ok) { 
         syncEnabled = true; 
@@ -1119,9 +1123,13 @@ function initFirebase() {
         pushLocalToFirebase();
       } else {
         setSyncDot('err');
+        console.warn('Firebase response not ok:', r.status);
       }
     })
-    .catch(function(){ setSyncDot('err'); });
+    .catch(function(e){ 
+      setSyncDot('err'); 
+      console.warn('Firebase fetch error:', e);
+    });
 }
 
 // ── PUSH LOCAL DATA TO FIREBASE ───────────────────────────
@@ -1177,7 +1185,7 @@ function pollFromFirebase() {
   if (!syncEnabled) return;
 
   // Poll journal for today
-  fetch(FB_URL + '/journal/' + today() + '.json')
+  fetch(FB_URL + '/journal/' + today() + '.json?t=' + Date.now(), {cache:'no-store',mode:'cors'})
     .then(function(r){ return r.json(); })
     .then(function(data) {
       if (data && typeof data === 'object') {
@@ -1195,7 +1203,7 @@ function pollFromFirebase() {
     }).catch(function(){ setSyncDot('err'); });
 
   // Poll containers
-  fetch(FB_URL + '/containers.json')
+  fetch(FB_URL + '/containers.json?t=' + Date.now(), {cache:'no-store',mode:'cors'})
     .then(function(r){ return r.json(); })
     .then(function(data) {
       if (data && typeof data === 'object') {
