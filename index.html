@@ -908,8 +908,8 @@ function cCard(c) {
   }).join('');
   var acts = c.status==='active'
     ? '<button class="cact" onclick="openSForm(\''+c.id+'\')">📊 Status</button><button class="cact g" onclick="quickDone(\''+c.id+'\')">✓ Fertig</button><button class="cact" onclick="exportCPDF(\''+c.id+'\')">📄 PDF</button><button class="cact" onclick="exportCCSV(\''+c.id+'\')">⬇ CSV</button>'
-    : '<button class="cact" onclick="exportCPDF(\''+c.id+'\')">📄 PDF</button><button class="cact" onclick="exportCCSV(\''+c.id+'\')">⬇ CSV</button><button class="cact r" onclick="delContainer(\''+c.id+'\')">🗑</button>';
-  return '<div class="cbox"><div class="cbox-hdr"><div class="cnum">📦 '+c.number+'</div><div class="cbadge '+c.status+'">'+(c.status==='active'?'Aktiv':'Fertig')+'</div><div class="cdur">'+dur+'</div></div><div class="cinfo">👷 '+c.workers+'</div><div class="ctasks"><span style="font-family:IBM Plex Mono,monospace;font-size:.6rem;color:var(--text2);text-transform:uppercase;letter-spacing:.08em">Aufgaben: </span>'+c.tasks+'</div>'+(c.statusLog.length?'<div class="cslog">'+slog+'</div>':'')+'<div class="cacts">'+acts+'</div></div>';
+    : '<button class="cact" onclick="exportCPDF(\''+c.id+'\')">📄 PDF</button><button class="cact" onclick="exportCCSV(\''+c.id+'\')">⬇ CSV</button>';
+  return '<div class="cbox"><div class="cbox-hdr"><div class="cnum">📦 '+c.number+'</div><div class="cbadge '+c.status+'">'+(c.status==='active'?'Aktiv':'Fertig')+'</div><div class="cbadge" style="color:var(--red);border-color:var(--red);background:rgba(224,85,85,.08);cursor:pointer;" onclick="delContainer(\''+c.id+'\')">Löschen</div><div class="cdur">'+dur+'</div></div><div class="cinfo">👷 '+c.workers+'</div><div class="ctasks"><span style="font-family:IBM Plex Mono,monospace;font-size:.6rem;color:var(--text2);text-transform:uppercase;letter-spacing:.08em">Aufgaben: </span>'+c.tasks+'</div>'+(c.statusLog.length?'<div class="cslog">'+slog+'</div>':'')+'<div class="cacts">'+acts+'</div></div>';
 }
 
 $('cNewBtn').addEventListener('click', function(){
